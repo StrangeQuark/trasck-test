@@ -2,6 +2,7 @@ package com.strangequark.trascktest.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -126,18 +127,25 @@ class AutomationAsyncApiTest {
                                 + " before starting the backend for local receiver webhook E2E assertions");
                 JsonNode webhook = session.requireJson(createWebhookResponse, 201);
                 String webhookId = webhook.path("id").asText();
+                String webhookSecretKeyId = webhook.path("secretKeyId").asText();
                 cleanup.delete(session, "/api/v1/webhooks/" + webhookId);
                 assertTrue(webhook.path("secretConfigured").asBoolean(), webhook.toString());
+                assertTrue(webhookSecretKeyId.startsWith("whsec_"), webhook.toString());
 
+                String rotatedWebhookSecret = webhookSecret + "-rotated";
                 JsonNode renamedWebhook = session.requireJson(session.patch(
                         "/api/v1/webhooks/" + webhookId,
                         JsonSupport.object(
                                 "name", "Playwright local receiver updated " + suffix,
+                                "secret", rotatedWebhookSecret,
                                 "eventTypes", List.of("manual", "playwright.webhook.updated"),
                                 "enabled", true
                         )
                 ), 200);
                 assertEquals("Playwright local receiver updated " + suffix, renamedWebhook.path("name").asText(), renamedWebhook.toString());
+                assertNotEquals(webhookSecretKeyId, renamedWebhook.path("secretKeyId").asText(), renamedWebhook.toString());
+                webhookSecret = rotatedWebhookSecret;
+                webhookSecretKeyId = renamedWebhook.path("secretKeyId").asText();
                 assertTrue(containsId(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/webhooks"), 200), webhookId));
 
                 String webhookRuleId = createRule(session, cleanup, workspace, "Playwright webhook rule " + suffix);
@@ -231,6 +239,7 @@ class AutomationAsyncApiTest {
                 assertEquals("playwright.webhook.updated", received.firstHeader("X-Trasck-Event-Type"));
                 assertEquals(webhookId, received.firstHeader("X-Trasck-Webhook-Id"));
                 assertEquals(webhookDeliveryId, received.firstHeader("X-Trasck-Webhook-Delivery-Id"));
+                assertEquals(webhookSecretKeyId, received.firstHeader("X-Trasck-Webhook-Signature-Key-Id"));
                 String signatureTimestamp = received.firstHeader("X-Trasck-Webhook-Timestamp");
                 assertFalse(signatureTimestamp.isBlank(), "Webhook signature timestamp should be present");
                 assertEquals(

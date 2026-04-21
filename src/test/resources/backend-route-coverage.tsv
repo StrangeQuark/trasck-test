@@ -232,8 +232,8 @@ covered	DELETE	/api/v1/screens/{screenId}/fields/{screenFieldId}	custom-field-co
 covered	PATCH	/api/v1/screens/{screenId}/fields/{screenFieldId}	custom-field-controller	updateScreenField	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	POST	/api/v1/setup	initial-setup-controller	createInitialSetup	SetupReadinessApiTest#setupBootstrapModeCanCreateAStackOnceAndThenReturnsConflict
 covered	GET	/api/v1/system-admins	system-admin-controller	listSystemAdmins	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
-planned-high-risk	POST	/api/v1/system-admins	system-admin-controller	grantSystemAdmin
-planned-high-risk	DELETE	/api/v1/system-admins/{userId}	system-admin-controller	revokeSystemAdmin
+covered	POST	/api/v1/system-admins	system-admin-controller	grantSystemAdmin	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
+covered	DELETE	/api/v1/system-admins/{userId}	system-admin-controller	revokeSystemAdmin	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
 covered	DELETE	/api/v1/teams/{teamId}	team-controller	archiveTeam	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
 covered	GET	/api/v1/teams/{teamId}	team-controller	getTeam	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
 covered	PATCH	/api/v1/teams/{teamId}	team-controller	updateTeam	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
@@ -301,9 +301,9 @@ covered	GET	/api/v1/workspaces/{workspaceId}/agents	agent-profile-controller	lis
 covered	POST	/api/v1/workspaces/{workspaceId}/agents	agent-profile-controller	createProfile	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
 covered	GET	/api/v1/workspaces/{workspaceId}/audit-log	audit-controller	listAuditLog	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
 covered	GET	/api/v1/workspaces/{workspaceId}/audit-retention-policy	audit-controller	getRetentionPolicy	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
-planned-high-risk	PUT	/api/v1/workspaces/{workspaceId}/audit-retention-policy	audit-controller	updateRetentionPolicy
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/audit-retention-policy/export	audit-controller	exportRetentionCandidates
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/audit-retention-policy/prune	audit-controller	pruneRetentionCandidates
+covered	PUT	/api/v1/workspaces/{workspaceId}/audit-retention-policy	audit-controller	updateRetentionPolicy	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
+covered	POST	/api/v1/workspaces/{workspaceId}/audit-retention-policy/export	audit-controller	exportRetentionCandidates	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
+covered	POST	/api/v1/workspaces/{workspaceId}/audit-retention-policy/prune	audit-controller	pruneRetentionCandidates	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
 covered	POST	/api/v1/workspaces/{workspaceId}/automation-jobs/run-queued	automation-controller	runQueuedJobs	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
 covered	GET	/api/v1/workspaces/{workspaceId}/automation-rules	automation-controller	listRules	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
 covered	POST	/api/v1/workspaces/{workspaceId}/automation-rules	automation-controller	createRule	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
@@ -317,14 +317,14 @@ covered	GET	/api/v1/workspaces/{workspaceId}/custom-fields	custom-field-controll
 covered	POST	/api/v1/workspaces/{workspaceId}/custom-fields	custom-field-controller	createCustomField	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	GET	/api/v1/workspaces/{workspaceId}/dashboards	dashboard-controller	list_2	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 covered	POST	/api/v1/workspaces/{workspaceId}/dashboards	dashboard-controller	create_2	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/domain-events/replay	domain-event-admin-controller	replay
+covered	POST	/api/v1/workspaces/{workspaceId}/domain-events/replay	domain-event-admin-controller	replay	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
 covered	GET	/api/v1/workspaces/{workspaceId}/email-deliveries	automation-controller	listEmailDeliveries	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
 covered	POST	/api/v1/workspaces/{workspaceId}/email-deliveries/process	automation-controller	processEmailDeliveries	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
 covered	GET	/api/v1/workspaces/{workspaceId}/email-provider-settings	automation-controller	getEmailProviderSettings	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
 covered	PUT	/api/v1/workspaces/{workspaceId}/email-provider-settings	automation-controller	updateEmailProviderSettings	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
 covered	GET	/api/v1/workspaces/{workspaceId}/export-jobs	audit-controller	listExportJobs	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/export-jobs/{exportJobId}	audit-controller	getExportJob
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/export-jobs/{exportJobId}/download	audit-controller	downloadExportJob
+covered	GET	/api/v1/workspaces/{workspaceId}/export-jobs/{exportJobId}	audit-controller	getExportJob	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
+covered	GET	/api/v1/workspaces/{workspaceId}/export-jobs/{exportJobId}/download	audit-controller	downloadExportJob	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
 covered	GET	/api/v1/workspaces/{workspaceId}/field-configurations	custom-field-controller	listFieldConfigurations	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	POST	/api/v1/workspaces/{workspaceId}/field-configurations	custom-field-controller	createFieldConfiguration	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/import-conflict-resolution-jobs	import-job-controller	listWorkspaceConflictResolutionJobs

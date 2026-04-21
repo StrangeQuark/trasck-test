@@ -278,6 +278,103 @@ class FrontendShellTest {
         }
     }
 
+    @Test
+    void agentsPageDrivesProviderProfileTaskAndDispatchAttemptControlsThroughBrowserUi() {
+        RuntimeChecks.requireHttpService("Trasck frontend", config.frontendBaseUrl(), "/", config.timeout());
+
+        String workspaceId = "00000000-0000-0000-0000-000000000101";
+        String projectId = "00000000-0000-0000-0000-000000000501";
+        String providerId = "00000000-0000-0000-0000-000000000c01";
+        String profileId = "00000000-0000-0000-0000-000000000c02";
+        String repositoryId = "00000000-0000-0000-0000-000000000c03";
+        String workItemId = "00000000-0000-0000-0000-000000000c04";
+        String taskId = "00000000-0000-0000-0000-000000000c05";
+        AtomicBoolean providerCreated = new AtomicBoolean(false);
+        AtomicBoolean profileCreated = new AtomicBoolean(false);
+        AtomicBoolean repositoryConnected = new AtomicBoolean(false);
+        AtomicBoolean runtimePreviewed = new AtomicBoolean(false);
+        AtomicBoolean taskAssigned = new AtomicBoolean(false);
+        AtomicBoolean taskLoaded = new AtomicBoolean(false);
+        AtomicBoolean taskRetried = new AtomicBoolean(false);
+        AtomicBoolean taskAccepted = new AtomicBoolean(false);
+        AtomicBoolean taskCanceled = new AtomicBoolean(false);
+        AtomicBoolean attemptsExported = new AtomicBoolean(false);
+        AtomicBoolean attemptsPruned = new AtomicBoolean(false);
+
+        try (Playwright playwright = Playwright.create();
+                Browser browser = BrowserFactory.launch(playwright, config);
+                BrowserSession session = BrowserSession.start(browser, config, "agents-ui")) {
+            Page page = session.page();
+            page.addInitScript("localStorage.setItem('trasck.workspaceId', '" + workspaceId + "');"
+                    + "localStorage.setItem('trasck.projectId', '" + projectId + "');"
+                    + "localStorage.setItem('trasck.apiBaseUrl', '" + config.frontendBaseUrl() + "');");
+            mockCurrentUser(page);
+            mockCsrf(page);
+            mockAgentsPage(
+                    page,
+                    workspaceId,
+                    projectId,
+                    providerId,
+                    profileId,
+                    repositoryId,
+                    workItemId,
+                    taskId,
+                    providerCreated,
+                    profileCreated,
+                    repositoryConnected,
+                    runtimePreviewed,
+                    taskAssigned,
+                    taskLoaded,
+                    taskRetried,
+                    taskAccepted,
+                    taskCanceled,
+                    attemptsExported,
+                    attemptsPruned
+            );
+
+            page.navigate("/agents");
+
+            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Provider"))).isVisible();
+            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Agent Records"))).isVisible();
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load")).last().click();
+            assertThat(page.getByText("Browser Agent Provider").first()).isVisible();
+            assertThat(page.getByText("Browser Agent Profile").first()).isVisible();
+            assertThat(page.getByText("Browser agent story").first()).isVisible();
+
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create provider")).click();
+            assertTrue(providerCreated.get(), "Create provider should call the agent provider endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create profile")).click();
+            assertTrue(profileCreated.get(), "Create profile should call the agent profile endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Connect")).click();
+            assertTrue(repositoryConnected.get(), "Connect should call the repository endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Preview runtime")).click();
+            assertTrue(runtimePreviewed.get(), "Preview runtime should call the runtime preview endpoint");
+            assertThat(page.getByText("trasck.agent-runtime-preview.v1").first()).isVisible();
+
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Assign")).click();
+            assertTrue(taskAssigned.get(), "Assign should call the work-item agent assignment endpoint");
+            assertThat(page.getByText(taskId).first()).isVisible();
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load")).first().click();
+            assertTrue(taskLoaded.get(), "Task Load should call the agent task detail endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Retry")).click();
+            assertTrue(taskRetried.get(), "Retry should call the agent task retry endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Accept")).click();
+            assertTrue(taskAccepted.get(), "Accept should call the agent task accept endpoint");
+            page.locator("button[title='Cancel']").click();
+            assertTrue(taskCanceled.get(), "Cancel should call the agent task cancel endpoint");
+
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Attempts")).click();
+            assertThat(page.getByText("dispatch").first()).isVisible();
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Export attempts")).click();
+            assertTrue(attemptsExported.get(), "Export attempts should call the dispatch-attempt export endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Prune attempts")).click();
+            assertTrue(attemptsPruned.get(), "Prune attempts should call the dispatch-attempt prune endpoint");
+
+            session.screenshot();
+            session.assertNoConsoleErrors();
+        }
+    }
+
     private static void mockAutomationPage(
             Page page,
             String workspaceId,
@@ -447,6 +544,153 @@ class FrontendShellTest {
                       "jobs": [%s]
                     }
                     """.formatted(workspaceId, automationJobJson("00000000-0000-0000-0000-000000000b04", ruleId, workspaceId, "succeeded")));
+        });
+    }
+
+    private static void mockAgentsPage(
+            Page page,
+            String workspaceId,
+            String projectId,
+            String providerId,
+            String profileId,
+            String repositoryId,
+            String workItemId,
+            String taskId,
+            AtomicBoolean providerCreated,
+            AtomicBoolean profileCreated,
+            AtomicBoolean repositoryConnected,
+            AtomicBoolean runtimePreviewed,
+            AtomicBoolean taskAssigned,
+            AtomicBoolean taskLoaded,
+            AtomicBoolean taskRetried,
+            AtomicBoolean taskAccepted,
+            AtomicBoolean taskCanceled,
+            AtomicBoolean attemptsExported,
+            AtomicBoolean attemptsPruned
+    ) {
+        page.route("**/api/v1/workspaces/" + workspaceId + "/agent-providers", route -> {
+            if ("POST".equals(route.request().method())) {
+                providerCreated.set(true);
+                fulfillJson(route, 201, agentProviderJson(providerId, workspaceId));
+                return;
+            }
+            fulfillJson(route, 200, "[" + agentProviderJson(providerId, workspaceId) + "]");
+        });
+        page.route("**/api/v1/workspaces/" + workspaceId + "/agents", route -> {
+            if ("POST".equals(route.request().method())) {
+                profileCreated.set(true);
+                fulfillJson(route, 201, agentProfileJson(profileId, providerId, workspaceId));
+                return;
+            }
+            fulfillJson(route, 200, "[" + agentProfileJson(profileId, providerId, workspaceId) + "]");
+        });
+        page.route("**/api/v1/workspaces/" + workspaceId + "/repository-connections", route -> {
+            if ("POST".equals(route.request().method())) {
+                repositoryConnected.set(true);
+                fulfillJson(route, 201, repositoryConnectionJson(repositoryId, workspaceId, projectId));
+                return;
+            }
+            fulfillJson(route, 200, "[" + repositoryConnectionJson(repositoryId, workspaceId, projectId) + "]");
+        });
+        page.route("**/api/v1/projects/" + projectId + "/work-items**", route -> fulfillJson(route, 200, """
+                {
+                  "items": [{
+                    "id": "%s",
+                    "workspaceId": "%s",
+                    "projectId": "%s",
+                    "key": "BAG-1",
+                    "title": "Browser agent story",
+                    "typeKey": "story",
+                    "statusKey": "open"
+                  }],
+                  "nextCursor": null,
+                  "hasMore": false,
+                  "limit": 50
+                }
+                """.formatted(workItemId, workspaceId, projectId)));
+        page.route("**/api/v1/agent-providers/" + providerId + "/runtime-preview", route -> {
+            runtimePreviewed.set(true);
+            fulfillJson(route, 200, """
+                    {
+                      "providerId": "%s",
+                      "providerKey": "browser-agent-provider",
+                      "providerType": "generic_worker",
+                      "dispatchMode": "polling",
+                      "runtimeMode": "provider_native",
+                      "transport": "polling",
+                      "externalExecutionEnabled": false,
+                      "valid": true,
+                      "errors": [],
+                      "payload": {
+                        "protocolVersion": "trasck.agent-runtime-preview.v1",
+                        "action": "dispatched",
+                        "agentTaskId": "%s"
+                      }
+                    }
+                    """.formatted(providerId, taskId));
+        });
+        page.route("**/api/v1/work-items/" + workItemId + "/assign-agent", route -> {
+            taskAssigned.set(true);
+            fulfillJson(route, 201, agentTaskJson(taskId, workspaceId, workItemId, profileId, providerId, "running"));
+        });
+        page.route("**/api/v1/agent-tasks/" + taskId, route -> {
+            taskLoaded.set(true);
+            fulfillJson(route, 200, agentTaskJson(taskId, workspaceId, workItemId, profileId, providerId, "running"));
+        });
+        page.route("**/api/v1/agent-tasks/" + taskId + "/retry", route -> {
+            taskRetried.set(true);
+            fulfillJson(route, 200, agentTaskJson(taskId, workspaceId, workItemId, profileId, providerId, "running"));
+        });
+        page.route("**/api/v1/agent-tasks/" + taskId + "/accept-result", route -> {
+            taskAccepted.set(true);
+            fulfillJson(route, 200, agentTaskJson(taskId, workspaceId, workItemId, profileId, providerId, "completed"));
+        });
+        page.route("**/api/v1/agent-tasks/" + taskId + "/cancel", route -> {
+            taskCanceled.set(true);
+            fulfillJson(route, 200, agentTaskJson(taskId, workspaceId, workItemId, profileId, providerId, "canceled"));
+        });
+        page.route("**/api/v1/workspaces/" + workspaceId + "/agent-dispatch-attempts**", route -> {
+            String method = route.request().method();
+            String url = route.request().url();
+            if ("POST".equals(method) && url.contains("/export")) {
+                attemptsExported.set(true);
+                fulfillJson(route, 201, """
+                        {
+                          "id": "00000000-0000-0000-0000-000000000c07",
+                          "workspaceId": "%s",
+                          "exportType": "agent_dispatch_attempts",
+                          "status": "completed",
+                          "filename": "agent-dispatch-attempts-browser.json",
+                          "contentType": "application/json",
+                          "sizeBytes": 512,
+                          "checksum": "sha256:browser",
+                          "requestPayload": {"agentTaskId": "%s"}
+                        }
+                        """.formatted(workspaceId, taskId));
+                return;
+            }
+            if ("POST".equals(method) && url.contains("/prune")) {
+                attemptsPruned.set(true);
+                fulfillJson(route, 200, """
+                        {
+                          "workspaceId": "%s",
+                          "retentionDays": 30,
+                          "attemptsEligible": 1,
+                          "attemptsIncluded": 1,
+                          "attemptsPruned": 0,
+                          "attempts": [%s]
+                        }
+                        """.formatted(workspaceId, agentDispatchAttemptJson(taskId, providerId, profileId, workItemId)));
+                return;
+            }
+            fulfillJson(route, 200, """
+                    {
+                      "items": [%s],
+                      "nextCursor": null,
+                      "hasMore": false,
+                      "limit": 25
+                    }
+                    """.formatted(agentDispatchAttemptJson(taskId, providerId, profileId, workItemId)));
         });
     }
 
@@ -1082,6 +1326,121 @@ class FrontendShellTest {
                   "logs": []
                 }
                 """.formatted(jobId, ruleId, workspaceId, status);
+    }
+
+    private static String agentProviderJson(String providerId, String workspaceId) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "providerKey": "browser-agent-provider",
+                  "providerType": "generic_worker",
+                  "displayName": "Browser Agent Provider",
+                  "dispatchMode": "polling",
+                  "callbackUrl": null,
+                  "capabilitySchema": {},
+                  "config": {
+                    "callbackJwt": {
+                      "algorithm": "RS256",
+                      "currentKid": "browser-key",
+                      "keys": [{"kid": "browser-key", "alg": "RS256"}]
+                    }
+                  },
+                  "enabled": true
+                }
+                """.formatted(providerId, workspaceId);
+    }
+
+    private static String agentProfileJson(String profileId, String providerId, String workspaceId) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "providerId": "%s",
+                  "displayName": "Browser Agent Profile",
+                  "username": "browser-agent",
+                  "status": "active",
+                  "maxConcurrentTasks": 1,
+                  "capabilities": {},
+                  "config": {},
+                  "projectIds": ["00000000-0000-0000-0000-000000000501"]
+                }
+                """.formatted(profileId, workspaceId, providerId);
+    }
+
+    private static String repositoryConnectionJson(String repositoryId, String workspaceId, String projectId) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "projectId": "%s",
+                  "provider": "generic_git",
+                  "name": "Browser Agent Repository",
+                  "repositoryUrl": "https://example.test/browser-agent.git",
+                  "defaultBranch": "main",
+                  "providerMetadata": {},
+                  "config": {},
+                  "active": true
+                }
+                """.formatted(repositoryId, workspaceId, projectId);
+    }
+
+    private static String agentTaskJson(String taskId, String workspaceId, String workItemId, String profileId, String providerId, String status) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "workItemId": "%s",
+                  "agentProfileId": "%s",
+                  "providerId": "%s",
+                  "requestedById": "00000000-0000-0000-0000-000000000001",
+                  "status": "%s",
+                  "dispatchMode": "polling",
+                  "externalTaskId": "browser-external-task",
+                  "contextSnapshot": {"source": "browser"},
+                  "requestPayload": {"instructions": "Browser agent workflow"},
+                  "resultPayload": {"summary": "Browser agent result"},
+                  "events": [],
+                  "messages": [],
+                  "artifacts": [{
+                    "id": "00000000-0000-0000-0000-000000000c06",
+                    "agentTaskId": "%s",
+                    "artifactType": "review",
+                    "name": "Browser Agent Review",
+                    "externalUrl": "https://example.test/agent/review",
+                    "metadata": {}
+                  }],
+                  "repositories": [],
+                  "dispatchAttempts": [%s],
+                  "callbackToken": "browser-callback-token"
+                }
+                """.formatted(taskId, workspaceId, workItemId, profileId, providerId, status, taskId,
+                agentDispatchAttemptJson(taskId, providerId, profileId, workItemId));
+    }
+
+    private static String agentDispatchAttemptJson(String taskId, String providerId, String profileId, String workItemId) {
+        return """
+                {
+                  "id": "00000000-0000-0000-0000-000000000c08",
+                  "workspaceId": "00000000-0000-0000-0000-000000000101",
+                  "agentTaskId": "%s",
+                  "providerId": "%s",
+                  "agentProfileId": "%s",
+                  "workItemId": "%s",
+                  "attemptType": "dispatch",
+                  "dispatchMode": "polling",
+                  "providerType": "generic_worker",
+                  "transport": "polling",
+                  "status": "succeeded",
+                  "externalTaskId": "browser-external-task",
+                  "idempotencyKey": "generic_worker:%s:dispatch",
+                  "externalDispatch": false,
+                  "requestPayload": {"source": "browser"},
+                  "responsePayload": {"status": "succeeded"},
+                  "startedAt": "2026-04-21T20:00:00Z",
+                  "finishedAt": "2026-04-21T20:00:01Z"
+                }
+                """.formatted(taskId, providerId, profileId, workItemId, taskId);
     }
 
     private static String rolePermissionCatalog() {

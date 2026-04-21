@@ -61,6 +61,14 @@ class WorkspaceAdminApiTest {
             ApiDiagnostics.writeSnippet("list-workspace-users-unauthenticated", "GET workspace users without auth", listUsers);
             assertTrue(listUsers.status() == 401 || listUsers.status() == 403, listUsers.text());
 
+            APIResponse workspaceRoles = request.get("/api/v1/workspaces/" + workspace.workspaceId() + "/roles");
+            ApiDiagnostics.writeSnippet("workspace-roles-unauthenticated", "GET workspace roles without auth", workspaceRoles);
+            assertTrue(workspaceRoles.status() == 401 || workspaceRoles.status() == 403, workspaceRoles.text());
+
+            APIResponse projectRoles = request.get("/api/v1/projects/" + workspace.projectId() + "/roles");
+            ApiDiagnostics.writeSnippet("project-roles-unauthenticated", "GET project roles without auth", projectRoles);
+            assertTrue(projectRoles.status() == 401 || projectRoles.status() == 403, projectRoles.text());
+
             APIResponse deleteUser = request.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/users/00000000-0000-0000-0000-000000000001");
             ApiDiagnostics.writeSnippet("delete-workspace-user-unauthenticated", "DELETE workspace user without auth", deleteUser);
             assertTrue(deleteUser.status() == 401 || deleteUser.status() == 403, deleteUser.text());
@@ -80,6 +88,12 @@ class WorkspaceAdminApiTest {
             TestWorkspace workspace = TestWorkspace.require(playwright, config);
             String suffix = UniqueData.suffix();
 
+            JsonNode workspaceRoles = session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/roles"), 200);
+            String memberRoleId = findByField(workspaceRoles, "key", "member").path("id").asText();
+            assertFalse(memberRoleId.isBlank(), workspaceRoles.toString());
+            JsonNode projectRoles = session.requireJson(session.get("/api/v1/projects/" + workspace.projectId() + "/roles"), 200);
+            assertEquals("project", findByField(projectRoles, "key", "project_admin").path("scope").asText(), projectRoles.toString());
+
             JsonNode repository = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/repository-connections", JsonSupport.object(
                     "projectId", workspace.projectId(),
                     "provider", "github",
@@ -98,6 +112,7 @@ class WorkspaceAdminApiTest {
 
             JsonNode invitation = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/invitations", JsonSupport.object(
                     "email", "playwright-invite-" + suffix + "@example.test",
+                    "roleId", memberRoleId,
                     "expiresAt", OffsetDateTime.now().plusDays(7).toString()
             )), 201);
             String invitationId = invitation.path("id").asText();
@@ -131,6 +146,7 @@ class WorkspaceAdminApiTest {
                     "username", "playwright-user-" + suffix,
                     "displayName", "Playwright User " + suffix,
                     "password", "correct-horse-battery-staple",
+                    "roleId", memberRoleId,
                     "emailVerified", true
             )), 201);
             String userId = user.path("id").asText();

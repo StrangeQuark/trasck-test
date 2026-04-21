@@ -67,9 +67,12 @@ class FrontendShellTest {
             mockCsrf(page);
             mockWorkspaceUsers(page, workspaceId, userCreated, userRemoved);
             mockWorkspaceInvitations(page, workspaceId, invitationCreated, invitationRevoked);
+            mockWorkspaceRoles(page, workspaceId);
+            mockWorkspaceSecurityPolicy(page, workspaceId);
 
             page.navigate("/workspace-settings");
 
+            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Workspace Security Policy"))).isVisible();
             assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Workspace Members"))).isVisible();
             assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Workspace Invitations"))).isVisible();
 
@@ -78,7 +81,7 @@ class FrontendShellTest {
             page.getByLabel("Display name").fill("Browser User");
             page.getByLabel("Password").fill("correct-horse-battery-staple");
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create User")).click();
-            assertThat(page.getByText("Browser User")).isVisible();
+            assertThat(page.getByText("Browser User").first()).isVisible();
 
             page.onceDialog(dialog -> dialog.accept());
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Remove")).click();
@@ -86,11 +89,48 @@ class FrontendShellTest {
 
             page.getByLabel("Invitation email").fill("browser-invite@example.test");
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Invite")).click();
-            assertThat(page.getByText("browser-invite@example.test")).isVisible();
+            assertThat(page.getByText("browser-invite@example.test").first()).isVisible();
 
             page.onceDialog(dialog -> dialog.accept());
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Revoke")).click();
             assertThat(page.getByText("No invitations loaded")).isVisible();
+
+            session.screenshot();
+            session.assertNoConsoleErrors();
+        }
+    }
+
+    @Test
+    void projectPublicReadSettingsExposePreviewRoute() {
+        RuntimeChecks.requireHttpService("Trasck frontend", config.frontendBaseUrl(), "/", config.timeout());
+
+        String workspaceId = "00000000-0000-0000-0000-000000000101";
+        String projectId = "00000000-0000-0000-0000-000000000501";
+        AtomicBoolean publicEnabled = new AtomicBoolean(false);
+
+        try (Playwright playwright = Playwright.create();
+                Browser browser = BrowserFactory.launch(playwright, config);
+                BrowserSession session = BrowserSession.start(browser, config, "project-public-read-ui")) {
+            Page page = session.page();
+            page.addInitScript("localStorage.setItem('trasck.workspaceId', '" + workspaceId + "');"
+                    + "localStorage.setItem('trasck.projectId', '" + projectId + "');"
+                    + "localStorage.setItem('trasck.apiBaseUrl', '" + config.frontendBaseUrl() + "');");
+            mockCurrentUser(page);
+            mockCsrf(page);
+            mockProjectSecurityPolicy(page, projectId, publicEnabled);
+            mockPublicProject(page, workspaceId, projectId, publicEnabled);
+
+            page.navigate("/project-settings");
+
+            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Project Security Policy"))).isVisible();
+            page.getByLabel("Visibility").selectOption("public");
+            page.onceDialog(dialog -> dialog.accept());
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Save").setExact(true)).click();
+            assertThat(page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Public Preview"))).isVisible();
+
+            page.navigate("/public/projects/" + projectId);
+            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Public Project Preview"))).isVisible();
+            assertThat(page.getByText("Browser Public Project").first()).isVisible();
 
             session.screenshot();
             session.assertNoConsoleErrors();
@@ -118,6 +158,121 @@ class FrontendShellTest {
                   "token": "browser-test-csrf"
                 }
                 """));
+    }
+
+    private static void mockWorkspaceRoles(Page page, String workspaceId) {
+        page.route("**/api/v1/workspaces/" + workspaceId + "/roles", route -> fulfillJson(route, 200, """
+                [{
+                  "id": "00000000-0000-0000-0000-000000000401",
+                  "workspaceId": "00000000-0000-0000-0000-000000000101",
+                  "key": "member",
+                  "name": "Member",
+                  "scope": "workspace",
+                  "description": "Creates and updates project work.",
+                  "systemRole": true
+                }]
+                """));
+    }
+
+    private static void mockWorkspaceSecurityPolicy(Page page, String workspaceId) {
+        page.route("**/api/v1/workspaces/" + workspaceId + "/security-policy", route -> {
+            if ("GET".equals(route.request().method()) || "PATCH".equals(route.request().method())) {
+                fulfillJson(route, 200, """
+                        {
+                          "workspaceId": "00000000-0000-0000-0000-000000000101",
+                          "anonymousReadEnabled": false,
+                          "attachmentMaxUploadBytes": 10485760,
+                          "attachmentMaxDownloadBytes": 52428800,
+                          "attachmentAllowedContentTypes": "text/plain,application/json",
+                          "exportMaxArtifactBytes": 52428800,
+                          "exportAllowedContentTypes": "application/json,text/csv",
+                          "importMaxParseBytes": 5242880,
+                          "importAllowedContentTypes": "text/csv,application/json",
+                          "customPolicy": false
+                        }
+                        """);
+                return;
+            }
+            route.fulfill(new Route.FulfillOptions().setStatus(405));
+        });
+    }
+
+    private static void mockProjectSecurityPolicy(Page page, String projectId, AtomicBoolean publicEnabled) {
+        page.route("**/api/v1/projects/" + projectId + "/security-policy", route -> {
+            if ("PATCH".equals(route.request().method())) {
+                publicEnabled.set(true);
+            }
+            if ("GET".equals(route.request().method()) || "PATCH".equals(route.request().method())) {
+                fulfillJson(route, 200, publicEnabled.get() ? publicProjectPolicy(projectId) : privateProjectPolicy(projectId));
+                return;
+            }
+            route.fulfill(new Route.FulfillOptions().setStatus(405));
+        });
+    }
+
+    private static void mockPublicProject(Page page, String workspaceId, String projectId, AtomicBoolean publicEnabled) {
+        page.route("**/api/v1/public/projects/" + projectId, route -> {
+            if (publicEnabled.get()) {
+                fulfillJson(route, 200, """
+                        {
+                          "id": "%s",
+                          "workspaceId": "%s",
+                          "name": "Browser Public Project",
+                          "key": "BPP",
+                          "description": "Browser public project preview",
+                          "visibility": "public"
+                        }
+                        """.formatted(projectId, workspaceId));
+                return;
+            }
+            fulfillJson(route, 404, """
+                    {
+                      "message": "Public project not found"
+                    }
+                    """);
+        });
+    }
+
+    private static String privateProjectPolicy(String projectId) {
+        return """
+                {
+                  "projectId": "%s",
+                  "workspaceId": "00000000-0000-0000-0000-000000000101",
+                  "visibility": "private",
+                  "workspaceAnonymousReadEnabled": true,
+                  "publicReadEnabled": false,
+                  "attachmentMaxUploadBytes": 10485760,
+                  "attachmentMaxDownloadBytes": 52428800,
+                  "attachmentAllowedContentTypes": "text/plain,application/json",
+                  "exportMaxArtifactBytes": 52428800,
+                  "exportAllowedContentTypes": "application/json,text/csv",
+                  "importMaxParseBytes": 5242880,
+                  "importAllowedContentTypes": "text/csv,application/json",
+                  "workspaceCustomPolicy": false,
+                  "customPolicy": false
+                }
+                """.formatted(projectId);
+    }
+
+    private static String publicProjectPolicy(String projectId) {
+        return """
+                {
+                  "projectId": "%s",
+                  "workspaceId": "00000000-0000-0000-0000-000000000101",
+                  "visibility": "public",
+                  "workspaceAnonymousReadEnabled": true,
+                  "publicReadEnabled": true,
+                  "attachmentMaxUploadBytes": 10485760,
+                  "attachmentMaxDownloadBytes": 52428800,
+                  "attachmentAllowedContentTypes": "text/plain,application/json",
+                  "exportMaxArtifactBytes": 52428800,
+                  "exportAllowedContentTypes": "application/json,text/csv",
+                  "importMaxParseBytes": 5242880,
+                  "importAllowedContentTypes": "text/csv,application/json",
+                  "workspaceCustomPolicy": false,
+                  "customPolicy": false
+                }
+                """.formatted(projectId);
     }
 
     private static void mockWorkspaceUsers(Page page, String workspaceId, AtomicBoolean userCreated, AtomicBoolean userRemoved) {

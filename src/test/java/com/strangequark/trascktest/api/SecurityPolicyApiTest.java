@@ -1,5 +1,6 @@
 package com.strangequark.trascktest.api;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -9,6 +10,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.microsoft.playwright.APIRequestContext;
 import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.FilePayload;
+import com.microsoft.playwright.options.FormData;
 import com.strangequark.trascktest.config.TrasckTestConfig;
 import com.strangequark.trascktest.support.ApiDiagnostics;
 import com.strangequark.trascktest.support.ApiRequestFactory;
@@ -17,6 +20,7 @@ import com.strangequark.trascktest.support.JsonSupport;
 import com.strangequark.trascktest.support.RuntimeChecks;
 import com.strangequark.trascktest.support.TestWorkspace;
 import com.strangequark.trascktest.support.UniqueData;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -76,6 +80,10 @@ class SecurityPolicyApiTest {
             boolean originalAnonymousRead = workspacePolicy.path("anonymousReadEnabled").asBoolean(false);
             String originalVisibility = projectPolicy.path("visibility").asText("private");
             String publicWorkItemId = null;
+            String publicCommentId = null;
+            String privateCommentId = null;
+            String publicAttachmentId = null;
+            String restrictedAttachmentId = null;
             APIRequestContext anonymous = ApiRequestFactory.backend(playwright, config);
             try {
                 JsonNode privateProjectPolicy = session.requireJson(session.patch(
@@ -137,15 +145,88 @@ class SecurityPolicyApiTest {
                 assertFalse(anonymousWorkItem.has("assigneeId"), anonymousWorkItem.toString());
                 assertFalse(anonymousWorkItem.has("reporterId"), anonymousWorkItem.toString());
 
+                JsonNode publicComment = session.requireJson(session.post(
+                        "/api/v1/work-items/" + publicWorkItemId + "/comments",
+                        JsonSupport.object(
+                                "bodyMarkdown", "Anonymous readers can see this public collaboration note.",
+                                "visibility", "workspace"
+                        )
+                ), 201);
+                publicCommentId = publicComment.path("id").asText();
+                JsonNode privateComment = session.requireJson(session.post(
+                        "/api/v1/work-items/" + publicWorkItemId + "/comments",
+                        JsonSupport.object(
+                                "bodyMarkdown", "Anonymous readers must not see this private note.",
+                                "visibility", "private"
+                        )
+                ), 201);
+                privateCommentId = privateComment.path("id").asText();
+                APIResponse publicCommentsResponse = anonymous.get("/api/v1/public/projects/" + workspace.projectId() + "/work-items/" + publicWorkItemId + "/comments");
+                ApiDiagnostics.writeSnippet("public-project-work-item-comments-open", "GET public project work item comments while public read is enabled", publicCommentsResponse);
+                assertEquals(200, publicCommentsResponse.status(), publicCommentsResponse.text());
+                JsonNode publicComments = JsonSupport.read(publicCommentsResponse.text());
+                assertEquals(1, publicComments.size(), publicComments.toString());
+                assertEquals("Anonymous readers can see this public collaboration note.", publicComments.path(0).path("bodyMarkdown").asText(), publicComments.toString());
+                assertFalse(publicComments.path(0).has("authorId"), publicComments.toString());
+                assertFalse(publicComments.path(0).has("updatedAt"), publicComments.toString());
+
+                byte[] publicAttachmentBytes = ("public attachment " + UniqueData.suffix()).getBytes(StandardCharsets.UTF_8);
+                JsonNode publicAttachment = session.requireJson(session.postMultipart(
+                        "/api/v1/work-items/" + publicWorkItemId + "/attachments/files",
+                        FormData.create()
+                                .set("visibility", "public")
+                                .set("file", new FilePayload("public-playwright-notes.txt", "text/plain", publicAttachmentBytes))
+                ), 201);
+                publicAttachmentId = publicAttachment.path("id").asText();
+                JsonNode restrictedAttachment = session.requireJson(session.postMultipart(
+                        "/api/v1/work-items/" + publicWorkItemId + "/attachments/files",
+                        FormData.create()
+                                .set("visibility", "restricted")
+                                .set("file", new FilePayload("restricted-playwright-notes.txt", "text/plain", "private".getBytes(StandardCharsets.UTF_8)))
+                ), 201);
+                restrictedAttachmentId = restrictedAttachment.path("id").asText();
+                APIResponse publicAttachmentsResponse = anonymous.get("/api/v1/public/projects/" + workspace.projectId() + "/work-items/" + publicWorkItemId + "/attachments");
+                ApiDiagnostics.writeSnippet("public-project-work-item-attachments-open", "GET public project work item attachments while public read is enabled", publicAttachmentsResponse);
+                assertEquals(200, publicAttachmentsResponse.status(), publicAttachmentsResponse.text());
+                JsonNode publicAttachments = JsonSupport.read(publicAttachmentsResponse.text());
+                assertEquals(1, publicAttachments.size(), publicAttachments.toString());
+                assertEquals(publicAttachmentId, publicAttachments.path(0).path("id").asText(), publicAttachments.toString());
+                assertFalse(publicAttachments.path(0).has("storageKey"), publicAttachments.toString());
+                assertFalse(publicAttachments.path(0).has("uploaderId"), publicAttachments.toString());
+                String downloadUrl = publicAttachments.path(0).path("downloadUrl").asText();
+                assertTrue(downloadUrl.contains("/download?token="), publicAttachments.toString());
+                APIResponse publicDownload = anonymous.get(downloadUrl);
+                ApiDiagnostics.writeSnippet("public-project-work-item-attachment-download-open", "GET public project work item attachment signed download", publicDownload);
+                assertEquals(200, publicDownload.status(), publicDownload.text());
+                assertArrayEquals(publicAttachmentBytes, publicDownload.body());
+                APIResponse badDownloadToken = anonymous.get("/api/v1/public/projects/" + workspace.projectId() + "/work-items/" + publicWorkItemId + "/attachments/" + publicAttachmentId + "/download?token=invalid");
+                assertEquals(403, badDownloadToken.status(), badDownloadToken.text());
+
                 session.requireJson(session.patch(
                         "/api/v1/work-items/" + publicWorkItemId,
                         JsonSupport.object("visibility", "private")
                 ), 200);
+                APIResponse privateCommentsResponse = anonymous.get("/api/v1/public/projects/" + workspace.projectId() + "/work-items/" + publicWorkItemId + "/comments");
+                assertEquals(404, privateCommentsResponse.status(), privateCommentsResponse.text());
+                APIResponse privateAttachmentsResponse = anonymous.get("/api/v1/public/projects/" + workspace.projectId() + "/work-items/" + publicWorkItemId + "/attachments");
+                assertEquals(404, privateAttachmentsResponse.status(), privateAttachmentsResponse.text());
                 APIResponse privateWorkItemResponse = anonymous.get("/api/v1/public/projects/" + workspace.projectId() + "/work-items/" + publicWorkItemId);
                 ApiDiagnostics.writeSnippet("public-project-work-item-private", "GET private work item through public project read", privateWorkItemResponse);
                 assertEquals(404, privateWorkItemResponse.status(), privateWorkItemResponse.text());
             } finally {
                 if (publicWorkItemId != null) {
+                    if (publicAttachmentId != null) {
+                        session.delete("/api/v1/work-items/" + publicWorkItemId + "/attachments/" + publicAttachmentId);
+                    }
+                    if (restrictedAttachmentId != null) {
+                        session.delete("/api/v1/work-items/" + publicWorkItemId + "/attachments/" + restrictedAttachmentId);
+                    }
+                    if (privateCommentId != null) {
+                        session.delete("/api/v1/work-items/" + publicWorkItemId + "/comments/" + privateCommentId);
+                    }
+                    if (publicCommentId != null) {
+                        session.delete("/api/v1/work-items/" + publicWorkItemId + "/comments/" + publicCommentId);
+                    }
                     session.delete("/api/v1/work-items/" + publicWorkItemId);
                 }
                 session.patch(

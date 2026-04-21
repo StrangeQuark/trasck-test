@@ -1,10 +1,10 @@
 FROM mcr.microsoft.com/playwright/java:v1.46.0-jammy
 
-WORKDIR /trascktestservice
+WORKDIR /trasck-test
+
+COPY pom.xml ./
+RUN mvn -q -DskipTests dependency:go-offline
 
 COPY src ./src
-COPY pom.xml ./
 
-RUN apt-get update && apt-get install -y curl netcat
-
-ENTRYPOINT ["mvn", "clean", "test"]
+ENTRYPOINT ["mvn", "test"]

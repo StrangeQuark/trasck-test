@@ -20,6 +20,10 @@ public final class ArtifactPaths {
         return ROOT.resolve("api").resolve(safeName(testName) + ".txt");
     }
 
+    public static Path apiArtifact(String filename) {
+        return ROOT.resolve("api").resolve(safeName(filename));
+    }
+
     private static String safeName(String testName) {
         return (testName == null || testName.isBlank() ? "test" : testName)
                 .replaceAll("[^a-zA-Z0-9._-]", "-")

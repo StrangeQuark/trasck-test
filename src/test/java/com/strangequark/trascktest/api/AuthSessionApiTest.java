@@ -14,6 +14,7 @@ import com.strangequark.trascktest.config.TrasckTestConfig;
 import com.strangequark.trascktest.support.ApiDiagnostics;
 import com.strangequark.trascktest.support.ApiRequestFactory;
 import com.strangequark.trascktest.support.RuntimeChecks;
+import com.strangequark.trascktest.support.SetupBootstrap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,14 +45,22 @@ class AuthSessionApiTest {
 
     @Test
     void loginEstablishesCookieAndBearerSessionsWhenCredentialsAreProvided() {
-        assumeTrue(config.hasLoginCredentials(), "Set TRASCK_E2E_LOGIN_IDENTIFIER and TRASCK_E2E_LOGIN_PASSWORD to run login smoke coverage");
+        assumeTrue(config.hasLoginCredentials() || config.allowSetupBootstrap(),
+                "Set TRASCK_E2E_LOGIN_IDENTIFIER/TRASCK_E2E_LOGIN_PASSWORD or TRASCK_E2E_ALLOW_SETUP=true to run login smoke coverage");
         RuntimeChecks.requireHttpService("Trasck backend", config.backendBaseUrl(), "/api/trasck/health", config.timeout());
 
         try (Playwright playwright = Playwright.create()) {
+            String identifier = config.loginIdentifier();
+            String password = config.loginPassword();
+            if (!config.hasLoginCredentials()) {
+                var loginContext = SetupBootstrap.require(playwright, config);
+                identifier = loginContext.loginIdentifier();
+                password = loginContext.loginPassword();
+            }
             APIRequestContext cookieRequest = ApiRequestFactory.backend(playwright, config);
             APIResponse login = cookieRequest.post("/api/v1/auth/login", RequestOptions.create().setData(Map.of(
-                    "identifier", config.loginIdentifier(),
-                    "password", config.loginPassword()
+                    "identifier", identifier,
+                    "password", password
             )));
             ApiDiagnostics.writeSnippet("auth-login", "POST /api/v1/auth/login", login);
             assertEquals(200, login.status(), login.text());

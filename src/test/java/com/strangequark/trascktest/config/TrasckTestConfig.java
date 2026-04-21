@@ -14,7 +14,8 @@ public record TrasckTestConfig(
         String loginIdentifier,
         String loginPassword,
         String workspaceId,
-        String projectId
+        String projectId,
+        boolean allowSetupBootstrap
 ) {
     public static TrasckTestConfig load() {
         return new TrasckTestConfig(
@@ -26,7 +27,8 @@ public record TrasckTestConfig(
                 blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_LOGIN_IDENTIFIER", "")),
                 blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_LOGIN_PASSWORD", "")),
                 blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_WORKSPACE_ID", "")),
-                blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_PROJECT_ID", ""))
+                blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_PROJECT_ID", "")),
+                Boolean.parseBoolean(EnvUtility.getEnvVar("TRASCK_E2E_ALLOW_SETUP", "false"))
         );
     }
 
@@ -36,6 +38,10 @@ public record TrasckTestConfig(
 
     public boolean hasWorkspaceContext() {
         return workspaceId != null && projectId != null;
+    }
+
+    public boolean canResolveAuthenticatedWorkspace() {
+        return (hasLoginCredentials() && hasWorkspaceContext()) || allowSetupBootstrap;
     }
 
     private static URI normalizedUri(String value) {

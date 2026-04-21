@@ -26,10 +26,10 @@ class SecurityPolicyApiTest {
 
     @Test
     void workspaceAndProjectPoliciesRequireAuthentication() {
-        TestWorkspace workspace = TestWorkspace.require(config);
         RuntimeChecks.requireHttpService("Trasck backend", config.backendBaseUrl(), "/api/trasck/health", config.timeout());
 
         try (Playwright playwright = Playwright.create()) {
+            TestWorkspace workspace = TestWorkspace.require(playwright, config);
             APIRequestContext request = ApiRequestFactory.backend(playwright, config);
             APIResponse workspacePolicy = request.get("/api/v1/workspaces/" + workspace.workspaceId() + "/security-policy");
             ApiDiagnostics.writeSnippet("workspace-policy-unauthenticated", "GET workspace security policy without auth", workspacePolicy);
@@ -44,12 +44,13 @@ class SecurityPolicyApiTest {
 
     @Test
     void authenticatedWorkspaceAndProjectPoliciesExposeEffectiveLimitsAndRejectInvalidUpdates() {
-        assumeTrue(config.hasLoginCredentials(), "Set TRASCK_E2E_LOGIN_IDENTIFIER and TRASCK_E2E_LOGIN_PASSWORD for authenticated API coverage");
-        TestWorkspace workspace = TestWorkspace.require(config);
+        assumeTrue(config.canResolveAuthenticatedWorkspace(),
+                "Set login/workspace/project env values or TRASCK_E2E_ALLOW_SETUP=true for authenticated API coverage");
         RuntimeChecks.requireHttpService("Trasck backend", config.backendBaseUrl(), "/api/trasck/health", config.timeout());
 
         try (Playwright playwright = Playwright.create();
                 AuthSession session = AuthSession.login(playwright, config)) {
+            TestWorkspace workspace = TestWorkspace.require(playwright, config);
             APIResponse workspacePolicyResponse = session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/security-policy");
             ApiDiagnostics.writeSnippet("workspace-policy-authenticated", "GET workspace security policy with auth", workspacePolicyResponse);
             JsonNode workspacePolicy = session.requireJson(workspacePolicyResponse, 200);

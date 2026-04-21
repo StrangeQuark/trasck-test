@@ -12,10 +12,10 @@ Current starter coverage:
 - Backend API smoke test for `GET /api/v1/auth/csrf`.
 - Backend API smoke tests for setup endpoint reachability, unauthenticated current-user denial, optional login/current-user cookie and Bearer sessions, and local OpenAPI availability.
 - Optional first-run setup bootstrap coverage that creates a disposable local stack through `/api/v1/setup` and proves a second setup attempt is rejected.
-- Authenticated backend API coverage for workspace/project security policy, public project/work-item/comment/attachment read boundaries with signed public attachment downloads, workspace/project role management, personal and service token scope behavior, system-admin/audit/export reads, configuration/custom-field/screen/reporting CRUD, work item collaboration/activity, attachment byte upload/download, workspace and work-item label cleanup, reporting history/snapshot reads and snapshot execution controls, program CRUD/project assignment/dashboard summary, team-scoped dashboard/filter/view/report-query lists, repository connections, invitation list/cancellation, workspace-admin human user list/creation/removal, team/planning/board/release/roadmap resources, notification preferences/defaults plus direct and automation-created notification read coverage, dashboards, saved filters, saved views, favorites, and recent items when local credentials plus workspace/project IDs are configured or setup bootstrap is enabled against an empty stack.
-- Committed OpenAPI route coverage baseline at `src/test/resources/backend-route-coverage.tsv`, including `coverageOwner` for covered rows, plus generated route inventory output under `test-results/api/backend-route-inventory.tsv` so backend API gaps can be closed route by route. The current baseline tracks 253 covered backend routes, 0 ordinary planned routes, and 144 planned high-risk routes.
+- Authenticated backend API coverage for workspace/project security policy, public project/work-item/comment/attachment read boundaries with signed public attachment downloads, workspace/project role management, personal and service token scope behavior, system-admin/audit/export reads, configuration/custom-field/screen/reporting CRUD, work item collaboration/activity, attachment byte upload/download, workspace and work-item label cleanup, reporting history/snapshot reads and snapshot execution controls, program CRUD/project assignment/dashboard summary, team-scoped dashboard/filter/view/report-query lists, repository connections, invitation list/cancellation, workspace-admin human user list/creation/removal, team/planning/board/release/roadmap resources, notification preferences/defaults plus direct and automation-created notification read coverage, automation rule/job/worker settings and worker run/health retention coverage, local-receiver-backed webhook delivery coverage, Maildev dry-run email delivery coverage, dashboards, saved filters, saved views, favorites, and recent items when local credentials plus workspace/project IDs are configured or setup bootstrap is enabled against an empty stack.
+- Committed OpenAPI route coverage baseline at `src/test/resources/backend-route-coverage.tsv`, including `coverageOwner` for covered rows, plus generated route inventory output under `test-results/api/backend-route-inventory.tsv` so backend API gaps can be closed route by route. The current baseline tracks 291 covered backend routes, 0 ordinary planned routes, and 106 planned high-risk routes.
 - Optional sample-data fixture support that stays separate from first-run setup bootstrap.
-- Frontend browser smoke tests for the route shell, core navigation, Workspace Settings member/invitation workflow, program/portfolio management, public-read settings, and public project/work-item/comment/attachment preview route.
+- Frontend browser smoke tests for the route shell, core navigation, Workspace Settings member/invitation workflow, program/portfolio management, automation async worker controls, public-read settings, and public project/work-item/comment/attachment preview route.
 
 ## Prerequisites
 
@@ -52,6 +52,11 @@ Supported variables:
 - `TRASCK_E2E_PROJECT_ID`: optional project ID used by authenticated project API coverage.
 - `TRASCK_E2E_ALLOW_SETUP`: set to `true` only for disposable local stacks where the suite may call first-run `/api/v1/setup`. Defaults to `false`.
 - `TRASCK_E2E_SEED_SAMPLE_DATA`: set to `true` only for tests that explicitly request optional browser workflow sample data after setup/login. Defaults to `false`.
+- `TRASCK_E2E_LOCAL_RECEIVER_BIND_HOST`: bind host for the local HTTP receiver used by webhook/worker delivery assertions. Defaults to `0.0.0.0`.
+- `TRASCK_E2E_LOCAL_RECEIVER_PORT`: fixed receiver port. Defaults to `6199`.
+- `TRASCK_E2E_LOCAL_RECEIVER_PUBLIC_BASE_URL`: URL the backend should call for local receiver assertions. Defaults to `http://localhost:6199`; use `http://host.docker.internal:6199` when the backend runs in Docker and needs to call a receiver on the host.
+
+The local receiver tests require the backend outbound URL policy to allow the configured receiver host before the backend starts. For normal host-based local runs, set `TRASCK_OUTBOUND_URL_ALLOWED_HOSTS=localhost:6199,127.0.0.1:6199` in the backend environment. For Docker-backed runs, allow the host name used by `TRASCK_E2E_LOCAL_RECEIVER_PUBLIC_BASE_URL`.
 
 Do not commit `.env`; use `.env.example` for safe defaults only.
 
@@ -93,7 +98,7 @@ Artifacts are written under `test-results/`:
 
 - `test-results/api`: response snippets with sensitive headers and token-shaped body fields redacted.
 - `test-results/api/backend-route-inventory.tsv`: generated OpenAPI route inventory with `covered`, `planned-high-risk`, and `planned` statuses.
-- `src/test/resources/backend-route-coverage.tsv`: committed coverage baseline. The OpenAPI route inventory test fails when a backend route is added without an explicit baseline status, and covered rows must name their owning Java Playwright test in `coverageOwner`. The current baseline tracks 253 covered backend routes, 0 ordinary planned routes, and 144 planned high-risk routes.
+- `src/test/resources/backend-route-coverage.tsv`: committed coverage baseline. The OpenAPI route inventory test fails when a backend route is added without an explicit baseline status, and covered rows must name their owning Java Playwright test in `coverageOwner`. The current baseline tracks 291 covered backend routes, 0 ordinary planned routes, and 106 planned high-risk routes.
 - `test-results/screenshots`: browser screenshots captured by smoke tests.
 - `test-results/traces`: Playwright trace ZIP files for browser runs.
 - `test-results/report.html`: Extent report output when report listeners are enabled by future suites.

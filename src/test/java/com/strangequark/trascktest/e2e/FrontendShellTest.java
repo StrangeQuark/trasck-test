@@ -193,6 +193,263 @@ class FrontendShellTest {
         }
     }
 
+    @Test
+    void automationPageDrivesAsyncWorkerControlsThroughBrowserUi() {
+        RuntimeChecks.requireHttpService("Trasck frontend", config.frontendBaseUrl(), "/", config.timeout());
+
+        String workspaceId = "00000000-0000-0000-0000-000000000101";
+        String projectId = "00000000-0000-0000-0000-000000000501";
+        String ruleId = "00000000-0000-0000-0000-000000000a01";
+        String webhookId = "00000000-0000-0000-0000-000000000a02";
+        String deliveryId = "00000000-0000-0000-0000-000000000a03";
+        String emailDeliveryId = "00000000-0000-0000-0000-000000000a04";
+        AtomicBoolean webhookCreated = new AtomicBoolean(false);
+        AtomicBoolean ruleCreated = new AtomicBoolean(false);
+        AtomicBoolean actionCreated = new AtomicBoolean(false);
+        AtomicBoolean ruleQueued = new AtomicBoolean(false);
+        AtomicBoolean queuedJobsRun = new AtomicBoolean(false);
+        AtomicBoolean webhooksProcessed = new AtomicBoolean(false);
+        AtomicBoolean emailsProcessed = new AtomicBoolean(false);
+        AtomicBoolean workerSettingsSaved = new AtomicBoolean(false);
+        AtomicBoolean workerRunsExported = new AtomicBoolean(false);
+        AtomicBoolean workerRunsPruned = new AtomicBoolean(false);
+
+        try (Playwright playwright = Playwright.create();
+                Browser browser = BrowserFactory.launch(playwright, config);
+                BrowserSession session = BrowserSession.start(browser, config, "automation-async-ui")) {
+            Page page = session.page();
+            page.addInitScript("localStorage.setItem('trasck.workspaceId', '" + workspaceId + "');"
+                    + "localStorage.setItem('trasck.projectId', '" + projectId + "');"
+                    + "localStorage.setItem('trasck.apiBaseUrl', '" + config.frontendBaseUrl() + "');");
+            mockCurrentUser(page);
+            mockCsrf(page);
+            mockAutomationPage(
+                    page,
+                    workspaceId,
+                    projectId,
+                    ruleId,
+                    webhookId,
+                    deliveryId,
+                    emailDeliveryId,
+                    webhookCreated,
+                    ruleCreated,
+                    actionCreated,
+                    ruleQueued,
+                    queuedJobsRun,
+                    webhooksProcessed,
+                    emailsProcessed,
+                    workerSettingsSaved,
+                    workerRunsExported,
+                    workerRunsPruned
+            );
+
+            page.navigate("/automation");
+
+            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Webhooks"))).isVisible();
+            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Execution"))).isVisible();
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load")).click();
+            assertThat(page.getByText("Browser Automation Webhook").first()).isVisible();
+            assertThat(page.getByText("Browser Automation Rule").first()).isVisible();
+
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create webhook")).click();
+            assertTrue(webhookCreated.get(), "Create webhook should call the frontend service");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create rule")).click();
+            assertTrue(ruleCreated.get(), "Create rule should call the frontend service");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Use webhook")).click();
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Add action")).click();
+            assertTrue(actionCreated.get(), "Add action should call the frontend service");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Queue rule")).click();
+            assertTrue(ruleQueued.get(), "Queue rule should call the frontend service");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Run jobs")).click();
+            assertTrue(queuedJobsRun.get(), "Run jobs should call the automation worker endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Run deliveries")).click();
+            assertTrue(webhooksProcessed.get(), "Run deliveries should call the webhook worker endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Run emails")).click();
+            assertTrue(emailsProcessed.get(), "Run emails should call the email worker endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Save worker settings")).click();
+            assertTrue(workerSettingsSaved.get(), "Save worker settings should call the settings endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Export runs")).click();
+            assertTrue(workerRunsExported.get(), "Export runs should call the worker-run export endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Prune runs")).click();
+            assertTrue(workerRunsPruned.get(), "Prune runs should call the worker-run prune endpoint");
+
+            session.screenshot();
+            session.assertNoConsoleErrors();
+        }
+    }
+
+    private static void mockAutomationPage(
+            Page page,
+            String workspaceId,
+            String projectId,
+            String ruleId,
+            String webhookId,
+            String deliveryId,
+            String emailDeliveryId,
+            AtomicBoolean webhookCreated,
+            AtomicBoolean ruleCreated,
+            AtomicBoolean actionCreated,
+            AtomicBoolean ruleQueued,
+            AtomicBoolean queuedJobsRun,
+            AtomicBoolean webhooksProcessed,
+            AtomicBoolean emailsProcessed,
+            AtomicBoolean workerSettingsSaved,
+            AtomicBoolean workerRunsExported,
+            AtomicBoolean workerRunsPruned
+    ) {
+        page.route("**/api/v1/workspaces/" + workspaceId + "/notifications**", route -> fulfillJson(route, 200, """
+                {
+                  "items": [],
+                  "nextCursor": null,
+                  "hasMore": false,
+                  "limit": 25
+                }
+                """));
+        page.route("**/api/v1/workspaces/" + workspaceId + "/notification-preferences", route -> fulfillJson(route, 200, "[]"));
+        page.route("**/api/v1/workspaces/" + workspaceId + "/notification-defaults", route -> fulfillJson(route, 200, "[]"));
+        page.route("**/api/v1/projects/" + projectId + "/work-items**", route -> fulfillJson(route, 200, """
+                {
+                  "items": [{
+                    "id": "00000000-0000-0000-0000-000000000b01",
+                    "projectId": "%s",
+                    "key": "BAT-1",
+                    "title": "Browser automation story"
+                  }],
+                  "nextCursor": null,
+                  "hasMore": false,
+                  "limit": 50
+                }
+                """.formatted(projectId)));
+        page.route("**/api/v1/workspaces/" + workspaceId + "/automation-worker-settings", route -> {
+            if ("PATCH".equals(route.request().method())) {
+                workerSettingsSaved.set(true);
+            }
+            fulfillJson(route, 200, automationWorkerSettingsJson(workspaceId));
+        });
+        page.route("**/api/v1/workspaces/" + workspaceId + "/automation-worker-runs**", route -> {
+            String method = route.request().method();
+            String url = route.request().url();
+            if ("POST".equals(method) && url.contains("/export")) {
+                workerRunsExported.set(true);
+                fulfillJson(route, 200, automationWorkerRetentionJson(workspaceId, "webhook", 0));
+                return;
+            }
+            if ("POST".equals(method) && url.contains("/prune")) {
+                workerRunsPruned.set(true);
+                fulfillJson(route, 200, automationWorkerRetentionJson(workspaceId, "webhook", 1));
+                return;
+            }
+            fulfillJson(route, 200, """
+                    [{
+                      "id": "00000000-0000-0000-0000-000000000b02",
+                      "workspaceId": "%s",
+                      "workerType": "webhook",
+                      "triggerType": "manual",
+                      "status": "succeeded",
+                      "dryRun": false,
+                      "requestedLimit": 5,
+                      "maxAttempts": 2,
+                      "processedCount": 1,
+                      "successCount": 1,
+                      "failureCount": 0,
+                      "deadLetterCount": 0,
+                      "metadata": {},
+                      "startedAt": "2026-04-21T20:00:00Z",
+                      "finishedAt": "2026-04-21T20:00:01Z"
+                    }]
+                    """.formatted(workspaceId));
+        });
+        page.route("**/api/v1/workspaces/" + workspaceId + "/automation-worker-health**", route -> fulfillJson(route, 200, """
+                [{
+                  "workspaceId": "%s",
+                  "workerType": "webhook",
+                  "lastStatus": "succeeded",
+                  "lastStartedAt": "2026-04-21T20:00:00Z",
+                  "lastFinishedAt": "2026-04-21T20:00:01Z",
+                  "lastRunId": "00000000-0000-0000-0000-000000000b02",
+                  "consecutiveFailures": 0,
+                  "updatedAt": "2026-04-21T20:00:01Z"
+                }]
+                """.formatted(workspaceId)));
+        page.route("**/api/v1/workspaces/" + workspaceId + "/webhook-deliveries/process", route -> {
+            webhooksProcessed.set(true);
+            fulfillJson(route, 200, """
+                    {
+                      "workspaceId": "%s",
+                      "processed": 1,
+                      "delivered": 1,
+                      "failed": 0,
+                      "deadLettered": 0,
+                      "deliveries": [%s]
+                    }
+                    """.formatted(workspaceId, webhookDeliveryJson(deliveryId, webhookId, "delivered")));
+        });
+        page.route("**/api/v1/workspaces/" + workspaceId + "/email-deliveries/process", route -> {
+            emailsProcessed.set(true);
+            fulfillJson(route, 200, """
+                    {
+                      "workspaceId": "%s",
+                      "processed": 1,
+                      "sent": 1,
+                      "failed": 0,
+                      "deadLettered": 0,
+                      "deliveries": [%s]
+                    }
+                    """.formatted(workspaceId, emailDeliveryJson(emailDeliveryId, workspaceId, "sent")));
+        });
+        page.route("**/api/v1/workspaces/" + workspaceId + "/email-deliveries**", route -> fulfillJson(route, 200, "[" + emailDeliveryJson(emailDeliveryId, workspaceId, "queued") + "]"));
+        page.route("**/api/v1/workspaces/" + workspaceId + "/webhooks", route -> {
+            String method = route.request().method();
+            if ("POST".equals(method)) {
+                webhookCreated.set(true);
+                fulfillJson(route, 201, webhookJson(webhookId, workspaceId));
+                return;
+            }
+            fulfillJson(route, 200, "[" + webhookJson(webhookId, workspaceId) + "]");
+        });
+        page.route("**/api/v1/webhooks/" + webhookId + "/deliveries", route -> fulfillJson(route, 200, "[" + webhookDeliveryJson(deliveryId, webhookId, "queued") + "]"));
+        page.route("**/api/v1/workspaces/" + workspaceId + "/automation-rules", route -> {
+            String method = route.request().method();
+            if ("POST".equals(method)) {
+                ruleCreated.set(true);
+                fulfillJson(route, 201, automationRuleJson(ruleId, workspaceId, projectId));
+                return;
+            }
+            fulfillJson(route, 200, "[" + automationRuleJson(ruleId, workspaceId, projectId) + "]");
+        });
+        page.route("**/api/v1/automation-rules/" + ruleId + "/actions", route -> {
+            actionCreated.set(true);
+            fulfillJson(route, 201, """
+                    {
+                      "id": "00000000-0000-0000-0000-000000000b03",
+                      "ruleId": "%s",
+                      "actionType": "webhook",
+                      "executionMode": "async",
+                      "config": {"webhookId": "%s"},
+                      "position": 1
+                    }
+                    """.formatted(ruleId, webhookId));
+        });
+        page.route("**/api/v1/automation-rules/" + ruleId + "/execute", route -> {
+            ruleQueued.set(true);
+            fulfillJson(route, 200, automationJobJson("00000000-0000-0000-0000-000000000b04", ruleId, workspaceId, "queued"));
+        });
+        page.route("**/api/v1/automation-rules/" + ruleId + "/jobs", route -> fulfillJson(route, 200,
+                "[" + automationJobJson("00000000-0000-0000-0000-000000000b04", ruleId, workspaceId, "queued") + "]"));
+        page.route("**/api/v1/workspaces/" + workspaceId + "/automation-jobs/run-queued", route -> {
+            queuedJobsRun.set(true);
+            fulfillJson(route, 200, """
+                    {
+                      "workspaceId": "%s",
+                      "processed": 1,
+                      "succeeded": 1,
+                      "failed": 0,
+                      "jobs": [%s]
+                    }
+                    """.formatted(workspaceId, automationJobJson("00000000-0000-0000-0000-000000000b04", ruleId, workspaceId, "succeeded")));
+        });
+    }
+
     private static void mockCurrentUser(Page page) {
         page.route("**/api/v1/auth/me", route -> fulfillJson(route, 200, """
                 {
@@ -686,6 +943,145 @@ class FrontendShellTest {
                 .setStatus(status)
                 .setContentType("application/json")
                 .setBody(body));
+    }
+
+    private static String automationWorkerSettingsJson(String workspaceId) {
+        return """
+                {
+                  "workspaceId": "%s",
+                  "automationJobsEnabled": true,
+                  "webhookDeliveriesEnabled": true,
+                  "emailDeliveriesEnabled": true,
+                  "importConflictResolutionEnabled": false,
+                  "importReviewExportsEnabled": false,
+                  "automationLimit": 5,
+                  "webhookLimit": 5,
+                  "emailLimit": 5,
+                  "importConflictResolutionLimit": 10,
+                  "importReviewExportLimit": 10,
+                  "webhookMaxAttempts": 2,
+                  "emailMaxAttempts": 2,
+                  "webhookDryRun": false,
+                  "emailDryRun": true,
+                  "workerRunRetentionEnabled": true,
+                  "workerRunRetentionDays": 0,
+                  "workerRunExportBeforePrune": true,
+                  "workerRunPruningAutomaticEnabled": false,
+                  "workerRunPruningIntervalMinutes": 1440,
+                  "agentDispatchAttemptRetentionEnabled": false,
+                  "agentDispatchAttemptRetentionDays": 30,
+                  "agentDispatchAttemptExportBeforePrune": true,
+                  "agentDispatchAttemptPruningAutomaticEnabled": false,
+                  "agentDispatchAttemptPruningIntervalMinutes": 1440,
+                  "updatedAt": "2026-04-21T20:00:00Z"
+                }
+                """.formatted(workspaceId);
+    }
+
+    private static String automationWorkerRetentionJson(String workspaceId, String workerType, int pruned) {
+        return """
+                {
+                  "workspaceId": "%s",
+                  "workerType": "%s",
+                  "triggerType": null,
+                  "status": null,
+                  "retentionEnabled": true,
+                  "retentionDays": 0,
+                  "exportBeforePrune": true,
+                  "cutoff": "2026-04-21T20:00:00Z",
+                  "runsEligible": 1,
+                  "runsIncluded": 1,
+                  "runsPruned": %d,
+                  "exportJobId": "00000000-0000-0000-0000-000000000b05",
+                  "fileAttachmentId": "00000000-0000-0000-0000-000000000b06",
+                  "runs": []
+                }
+                """.formatted(workspaceId, workerType, pruned);
+    }
+
+    private static String webhookJson(String webhookId, String workspaceId) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "name": "Browser Automation Webhook",
+                  "url": "http://localhost:6199/trasck-webhook",
+                  "secretConfigured": true,
+                  "eventTypes": ["manual"],
+                  "enabled": true
+                }
+                """.formatted(webhookId, workspaceId);
+    }
+
+    private static String webhookDeliveryJson(String deliveryId, String webhookId, String status) {
+        return """
+                {
+                  "id": "%s",
+                  "webhookId": "%s",
+                  "eventType": "manual",
+                  "payload": {"source": "browser"},
+                  "status": "%s",
+                  "responseCode": 202,
+                  "responseBody": "accepted",
+                  "attemptCount": 1,
+                  "createdAt": "2026-04-21T20:00:00Z"
+                }
+                """.formatted(deliveryId, webhookId, status);
+    }
+
+    private static String emailDeliveryJson(String deliveryId, String workspaceId, String status) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "automationJobId": "00000000-0000-0000-0000-000000000b04",
+                  "actionId": "00000000-0000-0000-0000-000000000b03",
+                  "provider": "maildev",
+                  "fromEmail": "playwright@trasck.local",
+                  "recipientEmail": "browser@example.test",
+                  "subject": "Browser automation email",
+                  "body": "Browser worker flow",
+                  "status": "%s",
+                  "attemptCount": 1,
+                  "responseBody": "accepted",
+                  "createdAt": "2026-04-21T20:00:00Z"
+                }
+                """.formatted(deliveryId, workspaceId, status);
+    }
+
+    private static String automationRuleJson(String ruleId, String workspaceId, String projectId) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "projectId": "%s",
+                  "name": "Browser Automation Rule",
+                  "triggerType": "manual",
+                  "triggerConfig": {"source": "browser"},
+                  "enabled": true,
+                  "conditions": [],
+                  "actions": [],
+                  "createdAt": "2026-04-21T20:00:00Z",
+                  "updatedAt": "2026-04-21T20:00:00Z"
+                }
+                """.formatted(ruleId, workspaceId, projectId);
+    }
+
+    private static String automationJobJson(String jobId, String ruleId, String workspaceId, String status) {
+        return """
+                {
+                  "id": "%s",
+                  "ruleId": "%s",
+                  "workspaceId": "%s",
+                  "sourceEntityType": "project",
+                  "sourceEntityId": "00000000-0000-0000-0000-000000000501",
+                  "status": "%s",
+                  "payload": {"source": "browser"},
+                  "attempts": 1,
+                  "createdAt": "2026-04-21T20:00:00Z",
+                  "logs": []
+                }
+                """.formatted(jobId, ruleId, workspaceId, status);
     }
 
     private static String rolePermissionCatalog() {

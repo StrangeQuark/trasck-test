@@ -71,6 +71,55 @@ class SecurityPolicyApiTest {
             );
             ApiDiagnostics.writeSnippet("project-policy-invalid-update", "PATCH project security policy with invalid size", invalidUpdate);
             assertEquals(400, invalidUpdate.status(), invalidUpdate.text());
+
+            boolean originalAnonymousRead = workspacePolicy.path("anonymousReadEnabled").asBoolean(false);
+            String originalVisibility = projectPolicy.path("visibility").asText("private");
+            APIRequestContext anonymous = ApiRequestFactory.backend(playwright, config);
+            try {
+                JsonNode privateProjectPolicy = session.requireJson(session.patch(
+                        "/api/v1/projects/" + workspace.projectId() + "/security-policy",
+                        JsonSupport.object("visibility", "private")
+                ), 200);
+                assertEquals("private", privateProjectPolicy.path("visibility").asText(), privateProjectPolicy.toString());
+                JsonNode closedWorkspacePolicy = session.requireJson(session.patch(
+                        "/api/v1/workspaces/" + workspace.workspaceId() + "/security-policy",
+                        JsonSupport.object("anonymousReadEnabled", false)
+                ), 200);
+                assertFalse(closedWorkspacePolicy.path("anonymousReadEnabled").asBoolean(), closedWorkspacePolicy.toString());
+
+                APIResponse closedPublicProject = anonymous.get("/api/v1/public/projects/" + workspace.projectId());
+                ApiDiagnostics.writeSnippet("public-project-closed", "GET public project while workspace/project public read is disabled", closedPublicProject);
+                assertEquals(404, closedPublicProject.status(), closedPublicProject.text());
+
+                JsonNode openWorkspacePolicy = session.requireJson(session.patch(
+                        "/api/v1/workspaces/" + workspace.workspaceId() + "/security-policy",
+                        JsonSupport.object("anonymousReadEnabled", true)
+                ), 200);
+                assertTrue(openWorkspacePolicy.path("anonymousReadEnabled").asBoolean(), openWorkspacePolicy.toString());
+                JsonNode publicProjectPolicy = session.requireJson(session.patch(
+                        "/api/v1/projects/" + workspace.projectId() + "/security-policy",
+                        JsonSupport.object("visibility", "public")
+                ), 200);
+                assertEquals("public", publicProjectPolicy.path("visibility").asText(), publicProjectPolicy.toString());
+                assertTrue(publicProjectPolicy.path("publicReadEnabled").asBoolean(), publicProjectPolicy.toString());
+
+                APIResponse publicProjectResponse = anonymous.get("/api/v1/public/projects/" + workspace.projectId());
+                ApiDiagnostics.writeSnippet("public-project-open", "GET public project while workspace/project public read is enabled", publicProjectResponse);
+                assertEquals(200, publicProjectResponse.status(), publicProjectResponse.text());
+                JsonNode publicProject = JsonSupport.read(publicProjectResponse.text());
+                assertEquals(workspace.projectId(), publicProject.path("id").asText(), publicProject.toString());
+                assertEquals("public", publicProject.path("visibility").asText(), publicProject.toString());
+            } finally {
+                session.patch(
+                        "/api/v1/projects/" + workspace.projectId() + "/security-policy",
+                        JsonSupport.object("visibility", originalVisibility)
+                );
+                session.patch(
+                        "/api/v1/workspaces/" + workspace.workspaceId() + "/security-policy",
+                        JsonSupport.object("anonymousReadEnabled", originalAnonymousRead)
+                );
+                anonymous.dispose();
+            }
         }
     }
 }

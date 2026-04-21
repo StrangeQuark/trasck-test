@@ -1,5 +1,6 @@
 package com.strangequark.trascktest.api;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -8,6 +9,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.microsoft.playwright.APIRequestContext;
 import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.RequestOptions;
 import com.strangequark.trascktest.config.TrasckTestConfig;
 import com.strangequark.trascktest.support.ApiCleanup;
 import com.strangequark.trascktest.support.ApiDiagnostics;
@@ -17,6 +19,7 @@ import com.strangequark.trascktest.support.JsonSupport;
 import com.strangequark.trascktest.support.RuntimeChecks;
 import com.strangequark.trascktest.support.TestWorkspace;
 import com.strangequark.trascktest.support.UniqueData;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -42,9 +45,17 @@ class WorkspaceAdminApiTest {
             ApiDiagnostics.writeSnippet("invitations-unauthenticated", "POST invitation without auth", invitations);
             assertTrue(invitations.status() == 401 || invitations.status() == 403, invitations.text());
 
+            APIResponse deleteInvitation = request.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/invitations/00000000-0000-0000-0000-000000000001");
+            ApiDiagnostics.writeSnippet("delete-invitation-unauthenticated", "DELETE invitation without auth", deleteInvitation);
+            assertTrue(deleteInvitation.status() == 401 || deleteInvitation.status() == 403, deleteInvitation.text());
+
             APIResponse users = request.post("/api/v1/workspaces/" + workspace.workspaceId() + "/users");
             ApiDiagnostics.writeSnippet("workspace-users-unauthenticated", "POST workspace user without auth", users);
             assertTrue(users.status() == 401 || users.status() == 403, users.text());
+
+            APIResponse deleteUser = request.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/users/00000000-0000-0000-0000-000000000001");
+            ApiDiagnostics.writeSnippet("delete-workspace-user-unauthenticated", "DELETE workspace user without auth", deleteUser);
+            assertTrue(deleteUser.status() == 401 || deleteUser.status() == 403, deleteUser.text());
             request.dispose();
         }
     }
@@ -79,9 +90,27 @@ class WorkspaceAdminApiTest {
 
             JsonNode invitation = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/invitations", JsonSupport.object(
                     "email", "playwright-invite-" + suffix + "@example.test",
-                    "expiresAt", "2026-04-28T00:00:00Z"
+                    "expiresAt", OffsetDateTime.now().plusDays(7).toString()
             )), 201);
+            String invitationId = invitation.path("id").asText();
+            cleanup.delete(session, "/api/v1/workspaces/" + workspace.workspaceId() + "/invitations/" + invitationId);
             assertFalse(invitation.path("token").asText().isBlank(), invitation.toString());
+            assertEquals(204, session.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/invitations/" + invitationId).status());
+
+            APIRequestContext rawRequest = ApiRequestFactory.backend(playwright, config);
+            try {
+                APIResponse revokedInvitationRegister = rawRequest.post("/api/v1/auth/register", RequestOptions.create().setData(JsonSupport.object(
+                        "email", "playwright-invite-" + suffix + "@example.test",
+                        "username", "playwright-revoked-" + suffix,
+                        "displayName", "Playwright Revoked " + suffix,
+                        "password", "correct-horse-battery-staple",
+                        "invitationToken", invitation.path("token").asText()
+                )));
+                ApiDiagnostics.writeSnippet("revoked-invitation-register", "POST register with revoked invitation", revokedInvitationRegister);
+                assertEquals(403, revokedInvitationRegister.status(), revokedInvitationRegister.text());
+            } finally {
+                rawRequest.dispose();
+            }
 
             JsonNode user = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/users", JsonSupport.object(
                     "email", "playwright-user-" + suffix + "@example.test",
@@ -90,7 +119,22 @@ class WorkspaceAdminApiTest {
                     "password", "correct-horse-battery-staple",
                     "emailVerified", true
             )), 201);
+            String userId = user.path("id").asText();
+            cleanup.delete(session, "/api/v1/workspaces/" + workspace.workspaceId() + "/users/" + userId);
             assertTrue(user.path("emailVerified").asBoolean(), user.toString());
+            assertEquals(204, session.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/users/" + userId).status());
+
+            APIRequestContext removedUserRequest = ApiRequestFactory.backend(playwright, config);
+            try {
+                APIResponse removedUserLogin = removedUserRequest.post("/api/v1/auth/login", RequestOptions.create().setData(JsonSupport.object(
+                        "identifier", "playwright-user-" + suffix + "@example.test",
+                        "password", "correct-horse-battery-staple"
+                )));
+                ApiDiagnostics.writeSnippet("removed-workspace-user-login", "POST login after workspace user removal", removedUserLogin);
+                assertEquals(401, removedUserLogin.status(), removedUserLogin.text());
+            } finally {
+                removedUserRequest.dispose();
+            }
         }
     }
 }

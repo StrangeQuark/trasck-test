@@ -131,21 +131,6 @@ class AutomationAsyncApiTest {
                 cleanup.delete(session, "/api/v1/webhooks/" + webhookId);
                 assertTrue(webhook.path("secretConfigured").asBoolean(), webhook.toString());
                 assertTrue(webhookSecretKeyId.startsWith("whsec_"), webhook.toString());
-
-                String rotatedWebhookSecret = webhookSecret + "-rotated";
-                JsonNode renamedWebhook = session.requireJson(session.patch(
-                        "/api/v1/webhooks/" + webhookId,
-                        JsonSupport.object(
-                                "name", "Playwright local receiver updated " + suffix,
-                                "secret", rotatedWebhookSecret,
-                                "eventTypes", List.of("manual", "playwright.webhook.updated"),
-                                "enabled", true
-                        )
-                ), 200);
-                assertEquals("Playwright local receiver updated " + suffix, renamedWebhook.path("name").asText(), renamedWebhook.toString());
-                assertNotEquals(webhookSecretKeyId, renamedWebhook.path("secretKeyId").asText(), renamedWebhook.toString());
-                webhookSecret = rotatedWebhookSecret;
-                webhookSecretKeyId = renamedWebhook.path("secretKeyId").asText();
                 assertTrue(containsId(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/webhooks"), 200), webhookId));
 
                 String webhookRuleId = createRule(session, cleanup, workspace, "Playwright webhook rule " + suffix);
@@ -219,7 +204,27 @@ class AutomationAsyncApiTest {
                 assertEquals("succeeded", runJob.path("status").asText(), runJob.toString());
                 JsonNode queuedDelivery = firstRow(session.requireJson(session.get("/api/v1/webhooks/" + webhookId + "/deliveries"), 200), "webhook delivery");
                 String webhookDeliveryId = queuedDelivery.path("id").asText();
+                String originalWebhookSecret = webhookSecret;
+                String originalWebhookSecretKeyId = webhookSecretKeyId;
+                assertEquals(originalWebhookSecretKeyId, queuedDelivery.path("signatureKeyId").asText(), queuedDelivery.toString());
                 assertEquals(webhookDeliveryId, session.requireJson(session.get("/api/v1/webhook-deliveries/" + webhookDeliveryId), 200).path("id").asText());
+
+                String rotatedWebhookSecret = webhookSecret + "-rotated";
+                JsonNode renamedWebhook = session.requireJson(session.patch(
+                        "/api/v1/webhooks/" + webhookId,
+                        JsonSupport.object(
+                                "name", "Playwright local receiver updated " + suffix,
+                                "secret", rotatedWebhookSecret,
+                                "eventTypes", List.of("manual", "playwright.webhook.updated"),
+                                "enabled", true
+                        )
+                ), 200);
+                assertEquals("Playwright local receiver updated " + suffix, renamedWebhook.path("name").asText(), renamedWebhook.toString());
+                assertEquals(originalWebhookSecretKeyId, renamedWebhook.path("previousSecretKeyId").asText(), renamedWebhook.toString());
+                assertFalse(renamedWebhook.path("previousSecretExpiresAt").asText().isBlank(), renamedWebhook.toString());
+                assertNotEquals(originalWebhookSecretKeyId, renamedWebhook.path("secretKeyId").asText(), renamedWebhook.toString());
+                webhookSecret = rotatedWebhookSecret;
+                webhookSecretKeyId = renamedWebhook.path("secretKeyId").asText();
 
                 JsonNode cancelledDelivery = session.requireJson(session.post("/api/v1/webhook-deliveries/" + webhookDeliveryId + "/cancel", Map.of()), 200);
                 assertEquals("cancelled", cancelledDelivery.path("status").asText(), cancelledDelivery.toString());
@@ -239,11 +244,11 @@ class AutomationAsyncApiTest {
                 assertEquals("playwright.webhook.updated", received.firstHeader("X-Trasck-Event-Type"));
                 assertEquals(webhookId, received.firstHeader("X-Trasck-Webhook-Id"));
                 assertEquals(webhookDeliveryId, received.firstHeader("X-Trasck-Webhook-Delivery-Id"));
-                assertEquals(webhookSecretKeyId, received.firstHeader("X-Trasck-Webhook-Signature-Key-Id"));
+                assertEquals(originalWebhookSecretKeyId, received.firstHeader("X-Trasck-Webhook-Signature-Key-Id"));
                 String signatureTimestamp = received.firstHeader("X-Trasck-Webhook-Timestamp");
                 assertFalse(signatureTimestamp.isBlank(), "Webhook signature timestamp should be present");
                 assertEquals(
-                        "sha256=" + hmacSha256(webhookSecret, signatureTimestamp + "." + received.body()),
+                        "sha256=" + hmacSha256(originalWebhookSecret, signatureTimestamp + "." + received.body()),
                         received.firstHeader("X-Trasck-Webhook-Signature")
                 );
                 assertTrue(received.body().contains(webhookRuleId), received.body());
@@ -262,6 +267,25 @@ class AutomationAsyncApiTest {
                 ), 200);
                 assertTrue(queuedWorkerRun.path("processed").asInt() >= 1, queuedWorkerRun.toString());
                 assertTrue(containsId(session.requireJson(session.get("/api/v1/automation-rules/" + webhookRuleId + "/jobs"), 200), queuedJob.path("id").asText()));
+                JsonNode rotatedQueuedDelivery = firstRow(session.requireJson(session.get("/api/v1/webhooks/" + webhookId + "/deliveries"), 200), "rotated webhook delivery");
+                String rotatedDeliveryId = rotatedQueuedDelivery.path("id").asText();
+                assertNotEquals(webhookDeliveryId, rotatedDeliveryId, rotatedQueuedDelivery.toString());
+                assertEquals(webhookSecretKeyId, rotatedQueuedDelivery.path("signatureKeyId").asText(), rotatedQueuedDelivery.toString());
+                receiver.clear();
+                JsonNode rotatedDeliveryRun = session.requireJson(session.post(
+                        "/api/v1/workspaces/" + workspace.workspaceId() + "/webhook-deliveries/process",
+                        JsonSupport.object("limit", 5, "maxAttempts", 2, "dryRun", false)
+                ), 200);
+                assertTrue(rotatedDeliveryRun.path("delivered").asInt() >= 1, rotatedDeliveryRun.toString());
+                assertTrue(receiver.awaitRequestCount(1, Duration.ofSeconds(5)), "Local receiver should receive the rotated webhook delivery");
+                LocalHttpReceiver.ReceivedRequest rotatedReceived = receiver.requests().get(0);
+                assertEquals(rotatedDeliveryId, rotatedReceived.firstHeader("X-Trasck-Webhook-Delivery-Id"));
+                assertEquals(webhookSecretKeyId, rotatedReceived.firstHeader("X-Trasck-Webhook-Signature-Key-Id"));
+                String rotatedSignatureTimestamp = rotatedReceived.firstHeader("X-Trasck-Webhook-Timestamp");
+                assertEquals(
+                        "sha256=" + hmacSha256(webhookSecret, rotatedSignatureTimestamp + "." + rotatedReceived.body()),
+                        rotatedReceived.firstHeader("X-Trasck-Webhook-Signature")
+                );
 
                 JsonNode emailRule = session.requireJson(session.post(
                         "/api/v1/workspaces/" + workspace.workspaceId() + "/automation-rules",

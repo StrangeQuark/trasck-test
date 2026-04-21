@@ -44,6 +44,42 @@ class AuthSessionApiTest {
     }
 
     @Test
+    void logoutRegisterAndOauthRoutesRejectUnsafeInputs() {
+        RuntimeChecks.requireHttpService("Trasck backend", config.backendBaseUrl(), "/api/trasck/health", config.timeout());
+
+        try (Playwright playwright = Playwright.create()) {
+            APIRequestContext request = ApiRequestFactory.backend(playwright, config);
+
+            APIResponse logout = request.post("/api/v1/auth/logout");
+            ApiDiagnostics.writeSnippet("auth-logout-open-route", "POST /api/v1/auth/logout", logout);
+            assertEquals(204, logout.status(), logout.text());
+            assertTrue(logout.headers().getOrDefault("set-cookie", "").contains("trasck_access_token="),
+                    logout.headers().toString());
+
+            APIResponse invalidRegister = request.post("/api/v1/auth/register", RequestOptions.create().setData(Map.of(
+                    "email", "invalid-register@example.test",
+                    "username", "invalid-register",
+                    "displayName", "Invalid Register",
+                    "password", "correct-horse-battery-staple",
+                    "invitationToken", "not-a-real-invitation-token"
+            )));
+            ApiDiagnostics.writeSnippet("auth-register-invalid-invitation", "POST /api/v1/auth/register invalid invitation", invalidRegister);
+            assertEquals(403, invalidRegister.status(), invalidRegister.text());
+
+            APIResponse invalidOauth = request.post("/api/v1/auth/oauth/login", RequestOptions.create().setData(Map.of(
+                    "provider", "github",
+                    "providerSubject", "playwright-subject",
+                    "providerEmail", "oauth-playwright@example.test",
+                    "emailVerified", true,
+                    "assertion", "invalid-assertion"
+            )));
+            ApiDiagnostics.writeSnippet("auth-oauth-invalid-assertion", "POST /api/v1/auth/oauth/login invalid assertion", invalidOauth);
+            assertTrue(invalidOauth.status() == 401 || invalidOauth.status() == 503, invalidOauth.text());
+            request.dispose();
+        }
+    }
+
+    @Test
     void loginEstablishesCookieAndBearerSessionsWhenCredentialsAreProvided() {
         assumeTrue(config.hasLoginCredentials() || config.allowSetupBootstrap(),
                 "Set TRASCK_E2E_LOGIN_IDENTIFIER/TRASCK_E2E_LOGIN_PASSWORD or TRASCK_E2E_ALLOW_SETUP=true to run login smoke coverage");

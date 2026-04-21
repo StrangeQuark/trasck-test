@@ -8,6 +8,8 @@ services:
       TRASCK_E2E_BROWSER: ${TRASCK_E2E_BROWSER:-chromium}
       TRASCK_E2E_HEADLESS: ${TRASCK_E2E_HEADLESS:-true}
       TRASCK_E2E_TIMEOUT_MS: ${TRASCK_E2E_TIMEOUT_MS:-30000}
+      TRASCK_E2E_LOGIN_IDENTIFIER: ${TRASCK_E2E_LOGIN_IDENTIFIER:-}
+      TRASCK_E2E_LOGIN_PASSWORD: ${TRASCK_E2E_LOGIN_PASSWORD:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

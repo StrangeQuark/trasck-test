@@ -19,10 +19,14 @@ import com.strangequark.trascktest.support.LocalHttpReceiver;
 import com.strangequark.trascktest.support.RuntimeChecks;
 import com.strangequark.trascktest.support.TestWorkspace;
 import com.strangequark.trascktest.support.UniqueData;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -70,6 +74,7 @@ class AutomationAsyncApiTest {
                 )) {
             TestWorkspace workspace = TestWorkspace.require(playwright, config);
             String suffix = UniqueData.suffix();
+            String webhookSecret = "playwright-secret-" + suffix;
             JsonNode originalWorkerSettings = session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/automation-worker-settings"), 200);
             JsonNode originalEmailSettings = session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/email-provider-settings"), 200);
 
@@ -109,7 +114,7 @@ class AutomationAsyncApiTest {
                         JsonSupport.object(
                                 "name", "Playwright local receiver " + suffix,
                                 "url", receiver.url("/trasck-webhook").toString(),
-                                "secret", "playwright-secret-" + suffix,
+                                "secret", webhookSecret,
                                 "eventTypes", List.of("manual", "playwright.webhook"),
                                 "enabled", true
                         )
@@ -224,6 +229,14 @@ class AutomationAsyncApiTest {
                 assertEquals("POST", received.method());
                 assertEquals("/trasck-webhook", received.path());
                 assertEquals("playwright.webhook.updated", received.firstHeader("X-Trasck-Event-Type"));
+                assertEquals(webhookId, received.firstHeader("X-Trasck-Webhook-Id"));
+                assertEquals(webhookDeliveryId, received.firstHeader("X-Trasck-Webhook-Delivery-Id"));
+                String signatureTimestamp = received.firstHeader("X-Trasck-Webhook-Timestamp");
+                assertFalse(signatureTimestamp.isBlank(), "Webhook signature timestamp should be present");
+                assertEquals(
+                        "sha256=" + hmacSha256(webhookSecret, signatureTimestamp + "." + received.body()),
+                        received.firstHeader("X-Trasck-Webhook-Signature")
+                );
                 assertTrue(received.body().contains(webhookRuleId), received.body());
 
                 JsonNode queuedJob = session.requireJson(session.post(
@@ -334,6 +347,16 @@ class AutomationAsyncApiTest {
         String ruleId = rule.path("id").asText();
         cleanup.delete(session, "/api/v1/automation-rules/" + ruleId);
         return ruleId;
+    }
+
+    private String hmacSha256(String secret, String value) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            return HexFormat.of().formatHex(mac.doFinal(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception ex) {
+            throw new AssertionError("Could not calculate webhook signature", ex);
+        }
     }
 
     private boolean isOutboundPolicyRejection(APIResponse response) {

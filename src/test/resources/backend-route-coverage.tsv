@@ -1,21 +1,21 @@
 status	method	path	tags	operationId	coverageOwner
 covered	GET	/api/trasck/health	health-controller	healthcheck	HealthApiTest#backendHealthEndpointResponds
-planned-high-risk	POST	/api/v1/agent-callbacks/{providerKey}	agent-task-controller	callback
-planned-high-risk	PATCH	/api/v1/agent-providers/{providerId}	agent-provider-controller	updateProvider
-planned-high-risk	POST	/api/v1/agent-providers/{providerId}/callback-keys/rotate	agent-provider-controller	rotateCallbackKey
-planned-high-risk	GET	/api/v1/agent-providers/{providerId}/credentials	agent-provider-controller	listCredentials
-planned-high-risk	POST	/api/v1/agent-providers/{providerId}/credentials	agent-provider-controller	createCredential
-planned-high-risk	POST	/api/v1/agent-providers/{providerId}/credentials/reencrypt	agent-provider-controller	reencryptCredentials
-planned-high-risk	POST	/api/v1/agent-providers/{providerId}/credentials/{credentialId}/deactivate	agent-provider-controller	deactivateCredential
-planned-high-risk	POST	/api/v1/agent-providers/{providerId}/runtime-preview	agent-provider-controller	previewRuntime
-planned-high-risk	GET	/api/v1/agent-tasks/{taskId}	agent-task-controller	getTask
-planned-high-risk	POST	/api/v1/agent-tasks/{taskId}/accept-result	agent-task-controller	acceptResult
-planned-high-risk	POST	/api/v1/agent-tasks/{taskId}/cancel	agent-task-controller	cancelTask
-planned-high-risk	POST	/api/v1/agent-tasks/{taskId}/messages	agent-task-controller	addHumanMessage
-planned-high-risk	POST	/api/v1/agent-tasks/{taskId}/request-changes	agent-task-controller	requestChanges
-planned-high-risk	POST	/api/v1/agent-tasks/{taskId}/retry	agent-task-controller	retryTask
-planned-high-risk	POST	/api/v1/agent-tasks/{taskId}/worker-dispatch	agent-task-controller	workerDispatch
-planned-high-risk	PATCH	/api/v1/agents/{profileId}	agent-profile-controller	updateProfile
+covered	POST	/api/v1/agent-callbacks/{providerKey}	agent-task-controller	callback	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	PATCH	/api/v1/agent-providers/{providerId}	agent-provider-controller	updateProvider	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/agent-providers/{providerId}/callback-keys/rotate	agent-provider-controller	rotateCallbackKey	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	GET	/api/v1/agent-providers/{providerId}/credentials	agent-provider-controller	listCredentials	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/agent-providers/{providerId}/credentials	agent-provider-controller	createCredential	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/agent-providers/{providerId}/credentials/reencrypt	agent-provider-controller	reencryptCredentials	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/agent-providers/{providerId}/credentials/{credentialId}/deactivate	agent-provider-controller	deactivateCredential	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/agent-providers/{providerId}/runtime-preview	agent-provider-controller	previewRuntime	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	GET	/api/v1/agent-tasks/{taskId}	agent-task-controller	getTask	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/agent-tasks/{taskId}/accept-result	agent-task-controller	acceptResult	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/agent-tasks/{taskId}/cancel	agent-task-controller	cancelTask	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/agent-tasks/{taskId}/messages	agent-task-controller	addHumanMessage	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/agent-tasks/{taskId}/request-changes	agent-task-controller	requestChanges	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/agent-tasks/{taskId}/retry	agent-task-controller	retryTask	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/agent-tasks/{taskId}/worker-dispatch	agent-task-controller	workerDispatch	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	PATCH	/api/v1/agents/{profileId}	agent-profile-controller	updateProfile	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
 covered	GET	/api/v1/auth/csrf	auth-controller	csrf	CsrfApiTest#csrfEndpointReturnsBrowserTokenMetadata
 covered	POST	/api/v1/auth/login	auth-controller	login	AuthSessionApiTest#loginEstablishesCookieAndBearerSessionsWhenCredentialsAreProvided
 planned-high-risk	POST	/api/v1/auth/logout	auth-controller	logout
@@ -255,7 +255,7 @@ covered	GET	/api/v1/work-items/{workItemId}	work-item-controller	get	WorkItemCol
 covered	PATCH	/api/v1/work-items/{workItemId}	work-item-controller	update	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
 covered	GET	/api/v1/work-items/{workItemId}/activity	activity-controller	workItemActivity	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
 covered	POST	/api/v1/work-items/{workItemId}/assign	work-item-controller	assign	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
-planned-high-risk	POST	/api/v1/work-items/{workItemId}/assign-agent	agent-task-controller	assignAgent
+covered	POST	/api/v1/work-items/{workItemId}/assign-agent	agent-task-controller	assignAgent	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
 covered	GET	/api/v1/work-items/{workItemId}/attachments	work-item-controller	listAttachments	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
 covered	POST	/api/v1/work-items/{workItemId}/attachments	work-item-controller	addAttachmentMetadata	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
 covered	POST	/api/v1/work-items/{workItemId}/attachments/files	work-item-controller	uploadAttachment	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
@@ -285,20 +285,20 @@ covered	POST	/api/v1/work-items/{workItemId}/work-logs	work-item-controller	crea
 covered	DELETE	/api/v1/work-items/{workItemId}/work-logs/{workLogId}	work-item-controller	deleteWorkLog	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
 covered	PATCH	/api/v1/work-items/{workItemId}/work-logs/{workLogId}	work-item-controller	updateWorkLog	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
 covered	GET	/api/v1/workspaces/{workspaceId}/activity	activity-controller	workspaceActivity	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/agent-dispatch-attempts	agent-dispatch-attempt-controller	listDispatchAttempts
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agent-dispatch-attempts/export	agent-dispatch-attempt-controller	exportDispatchAttempts
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agent-dispatch-attempts/prune	agent-dispatch-attempt-controller	pruneDispatchAttempts
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/agent-providers	agent-provider-controller	listProviders
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agent-providers	agent-provider-controller	createProvider
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/claim	agent-worker-controller	claimTask
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/{taskId}/artifacts	agent-worker-controller	artifact
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/{taskId}/cancel	agent-worker-controller	cancel
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/{taskId}/heartbeat	agent-worker-controller	heartbeat
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/{taskId}/logs	agent-worker-controller	log
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/{taskId}/messages	agent-worker-controller	message
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/{taskId}/retry	agent-worker-controller	retry
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/agents	agent-profile-controller	listProfiles
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agents	agent-profile-controller	createProfile
+covered	GET	/api/v1/workspaces/{workspaceId}/agent-dispatch-attempts	agent-dispatch-attempt-controller	listDispatchAttempts	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/workspaces/{workspaceId}/agent-dispatch-attempts/export	agent-dispatch-attempt-controller	exportDispatchAttempts	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/workspaces/{workspaceId}/agent-dispatch-attempts/prune	agent-dispatch-attempt-controller	pruneDispatchAttempts	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	GET	/api/v1/workspaces/{workspaceId}/agent-providers	agent-provider-controller	listProviders	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/workspaces/{workspaceId}/agent-providers	agent-provider-controller	createProvider	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/claim	agent-worker-controller	claimTask	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/{taskId}/artifacts	agent-worker-controller	artifact	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/{taskId}/cancel	agent-worker-controller	cancel	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/{taskId}/heartbeat	agent-worker-controller	heartbeat	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/{taskId}/logs	agent-worker-controller	log	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/{taskId}/messages	agent-worker-controller	message	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/{taskId}/retry	agent-worker-controller	retry	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	GET	/api/v1/workspaces/{workspaceId}/agents	agent-profile-controller	listProfiles	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/workspaces/{workspaceId}/agents	agent-profile-controller	createProfile	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
 covered	GET	/api/v1/workspaces/{workspaceId}/audit-log	audit-controller	listAuditLog	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
 covered	GET	/api/v1/workspaces/{workspaceId}/audit-retention-policy	audit-controller	getRetentionPolicy	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
 planned-high-risk	PUT	/api/v1/workspaces/{workspaceId}/audit-retention-policy	audit-controller	updateRetentionPolicy

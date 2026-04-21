@@ -250,7 +250,7 @@ class PlanningBoardApiTest {
                 "title", title,
                 "reporterId", session.userId(),
                 "descriptionMarkdown", "Created by planning/board Playwright API coverage.",
-                "visibility", "workspace"
+                "visibility", "inherited"
         ));
         ApiDiagnostics.writeSnippet("planning-board-work-item-create", "POST project work item", response);
         return session.requireJson(response, 201);

@@ -39,6 +39,14 @@ class NotificationPreferencesApiTest {
             ApiDiagnostics.writeSnippet("notifications-unauthenticated", "GET workspace notifications without auth", notifications);
             assertTrue(notifications.status() == 401 || notifications.status() == 403, notifications.text());
 
+            APIResponse createNotification = request.post("/api/v1/workspaces/" + workspace.workspaceId() + "/notifications");
+            ApiDiagnostics.writeSnippet("create-notification-unauthenticated", "POST workspace notification without auth", createNotification);
+            assertTrue(createNotification.status() == 401 || createNotification.status() == 403, createNotification.text());
+
+            APIResponse readNotification = request.patch("/api/v1/notifications/00000000-0000-0000-0000-000000000001/read");
+            ApiDiagnostics.writeSnippet("read-notification-unauthenticated", "PATCH notification read without auth", readNotification);
+            assertTrue(readNotification.status() == 401 || readNotification.status() == 403, readNotification.text());
+
             APIResponse preferences = request.get("/api/v1/workspaces/" + workspace.workspaceId() + "/notification-preferences");
             ApiDiagnostics.writeSnippet("notification-preferences-unauthenticated", "GET notification preferences without auth", preferences);
             assertTrue(preferences.status() == 401 || preferences.status() == 403, preferences.text());
@@ -60,9 +68,21 @@ class NotificationPreferencesApiTest {
                 AuthSession session = AuthSession.login(playwright, config);
                 ApiCleanup cleanup = new ApiCleanup()) {
             TestWorkspace workspace = TestWorkspace.require(playwright, config);
-            String eventType = "playwright.notification." + UniqueData.suffix();
+            String suffix = UniqueData.suffix();
+            String eventType = "playwright.notification." + suffix;
 
             assertTrue(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/notifications"), 200).isArray());
+
+            JsonNode directNotification = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/notifications", JsonSupport.object(
+                    "userId", session.userId(),
+                    "type", "direct",
+                    "title", "Playwright direct notification " + suffix,
+                    "body", "Created through the direct workspace notification API.",
+                    "targetType", "project",
+                    "targetId", workspace.projectId()
+            )), 201);
+            JsonNode directRead = session.requireJson(session.patch("/api/v1/notifications/" + directNotification.path("id").asText() + "/read", Map.of()), 200);
+            assertFalse(directRead.path("readAt").asText("").isBlank(), directRead.toString());
 
             JsonNode preference = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/notification-preferences", JsonSupport.object(
                     "channel", "in_app",
@@ -95,6 +115,55 @@ class NotificationPreferencesApiTest {
                     "config", Map.of("source", "playwright-default", "updated", true)
             )), 200);
             assertFalse(updatedDefault.path("enabled").asBoolean(), updatedDefault.toString());
+
+            JsonNode rule = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/automation-rules", JsonSupport.object(
+                    "projectId", workspace.projectId(),
+                    "name", "Playwright notification rule " + suffix,
+                    "triggerType", "manual",
+                    "triggerConfig", Map.of("source", "notification-read-coverage"),
+                    "enabled", true
+            )), 201);
+            String ruleId = rule.path("id").asText();
+            cleanup.delete(session, "/api/v1/automation-rules/" + ruleId);
+            String automationTitle = "Playwright automation notification " + suffix;
+            session.requireJson(session.post("/api/v1/automation-rules/" + ruleId + "/actions", JsonSupport.object(
+                    "actionType", "create_notification",
+                    "executionMode", "sync",
+                    "position", 0,
+                    "config", JsonSupport.object(
+                            "userId", session.userId(),
+                            "title", automationTitle,
+                            "body", "Created through automation delivery.",
+                            "targetType", "project",
+                            "targetId", workspace.projectId()
+                    )
+            )), 201);
+            JsonNode execution = session.requireJson(session.post("/api/v1/automation-rules/" + ruleId + "/execute", JsonSupport.object(
+                    "sourceEntityType", "project",
+                    "sourceEntityId", workspace.projectId(),
+                    "payload", JsonSupport.object("source", "notification-read-coverage")
+            )), 200);
+            assertEquals("queued", execution.path("status").asText(), execution.toString());
+            JsonNode workerRun = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/automation-jobs/run-queued", JsonSupport.object(
+                    "limit", 5
+            )), 200);
+            assertTrue(workerRun.path("processed").asInt() >= 1, workerRun.toString());
+
+            JsonNode automationNotification = findNotification(
+                    session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/notifications"), 200),
+                    automationTitle
+            );
+            JsonNode automationRead = session.requireJson(session.patch("/api/v1/notifications/" + automationNotification.path("id").asText() + "/read", Map.of()), 200);
+            assertFalse(automationRead.path("readAt").asText("").isBlank(), automationRead.toString());
         }
+    }
+
+    private JsonNode findNotification(JsonNode notifications, String title) {
+        for (JsonNode notification : notifications) {
+            if (title.equals(notification.path("title").asText())) {
+                return notification;
+            }
+        }
+        throw new AssertionError("Notification not found with title " + title + ": " + notifications);
     }
 }

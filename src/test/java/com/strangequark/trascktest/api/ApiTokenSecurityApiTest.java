@@ -114,7 +114,7 @@ class ApiTokenSecurityApiTest {
                     "typeKey", "story",
                     "title", "Service token denied create " + suffix,
                     "reporterId", session.userId(),
-                    "visibility", "workspace"
+                    "visibility", "inherited"
             )));
             ApiDiagnostics.writeSnippet("service-token-scope-create-denial", "POST work item using work_item.read service token", createDenied);
             assertEquals(403, createDenied.status(), createDenied.text());

@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 @Tag("contract")
 class OpenApiRouteInventoryApiTest {
     private static final String COVERAGE_BASELINE = "/backend-route-coverage.tsv";
+    private static final String BASELINE_HEADER = "status\tmethod\tpath\ttags\toperationId\tcoverageOwner";
     private static final Set<String> VALID_STATUSES = Set.of("covered", "planned-high-risk", "planned");
 
     private final TrasckTestConfig config = TrasckTestConfig.load();
@@ -100,7 +101,7 @@ class OpenApiRouteInventoryApiTest {
     }
 
     private String inventoryText(List<RouteOperation> operations, Map<String, CoverageEntry> baseline) {
-        StringBuilder builder = new StringBuilder("status\tmethod\tpath\ttags\toperationId\n");
+        StringBuilder builder = new StringBuilder(BASELINE_HEADER).append('\n');
         for (RouteOperation operation : operations) {
             CoverageEntry coverage = baseline.get(operation.key());
             builder.append(coverage == null ? "missing" : coverage.status())
@@ -112,6 +113,8 @@ class OpenApiRouteInventoryApiTest {
                     .append(String.join(",", operation.tags()))
                     .append('\t')
                     .append(operation.operationId())
+                    .append('\t')
+                    .append(coverage == null ? "" : coverage.coverageOwner())
                     .append('\n');
         }
         return builder.toString();
@@ -126,18 +129,31 @@ class OpenApiRouteInventoryApiTest {
             List<String> lines = reader.lines()
                     .filter(line -> !line.isBlank() && !line.startsWith("#"))
                     .toList();
-            if (lines.isEmpty() || !"status\tmethod\tpath\ttags\toperationId".equals(lines.getFirst())) {
-                throw new AssertionError("Route coverage baseline must start with: status\\tmethod\\tpath\\ttags\\toperationId");
+            if (lines.isEmpty() || !BASELINE_HEADER.equals(lines.getFirst())) {
+                throw new AssertionError("Route coverage baseline must start with: " + BASELINE_HEADER.replace("\t", "\\t"));
             }
             java.util.LinkedHashMap<String, CoverageEntry> entries = new java.util.LinkedHashMap<>();
             for (String line : lines.subList(1, lines.size())) {
                 String[] columns = line.split("\t", -1);
-                if (columns.length != 5) {
+                if (columns.length != 5 && columns.length != 6) {
                     throw new AssertionError("Invalid route coverage baseline row: " + line);
                 }
-                CoverageEntry entry = new CoverageEntry(columns[0], columns[1], columns[2], columns[3], columns[4]);
+                CoverageEntry entry = new CoverageEntry(
+                        columns[0],
+                        columns[1],
+                        columns[2],
+                        columns[3],
+                        columns[4],
+                        columns.length == 6 ? columns[5] : ""
+                );
                 if (!VALID_STATUSES.contains(entry.status())) {
                     throw new AssertionError("Invalid route coverage status '" + entry.status() + "' for " + entry.key());
+                }
+                if ("covered".equals(entry.status()) && entry.coverageOwner().isBlank()) {
+                    throw new AssertionError("Covered route must include coverageOwner for " + entry.key());
+                }
+                if (!"covered".equals(entry.status()) && !entry.coverageOwner().isBlank()) {
+                    throw new AssertionError("Only covered routes may include coverageOwner for " + entry.key());
                 }
                 if (entries.put(entry.key(), entry) != null) {
                     throw new AssertionError("Duplicate route coverage baseline row for " + entry.key());
@@ -182,7 +198,7 @@ class OpenApiRouteInventoryApiTest {
         }
     }
 
-    private record CoverageEntry(String status, String method, String path, String tags, String operationId) {
+    private record CoverageEntry(String status, String method, String path, String tags, String operationId, String coverageOwner) {
         String key() {
             return method + " " + path;
         }

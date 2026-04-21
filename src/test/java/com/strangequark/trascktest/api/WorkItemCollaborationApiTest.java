@@ -56,6 +56,7 @@ class WorkItemCollaborationApiTest {
             String primaryId = primary.path("id").asText();
             cleanup.delete(session, "/api/v1/work-items/" + primaryId);
             assertFalse(primary.path("key").asText().isBlank(), primary.toString());
+            assertEquals(primaryId, session.requireJson(session.get("/api/v1/work-items/" + primaryId), 200).path("id").asText());
 
             JsonNode peer = createStory(session, workspace.projectId(), "Playwright peer story " + suffix);
             String peerId = peer.path("id").asText();
@@ -71,6 +72,16 @@ class WorkItemCollaborationApiTest {
             JsonNode updated = session.requireJson(updateResponse, 200);
             assertEquals("Playwright collaboration story updated " + suffix, updated.path("title").asText());
             assertEquals(240, updated.path("estimateMinutes").asInt());
+            JsonNode assigned = session.requireJson(session.post("/api/v1/work-items/" + primaryId + "/assign", JsonSupport.object(
+                    "assigneeId", session.userId()
+            )), 200);
+            assertEquals(session.userId(), assigned.path("assigneeId").asText(), assigned.toString());
+            assertEquals(primaryId, session.requireJson(session.post("/api/v1/work-items/" + primaryId + "/rank", JsonSupport.object(
+                    "previousWorkItemId", peerId
+            )), 200).path("id").asText());
+            assertEquals(primaryId, session.requireJson(session.post("/api/v1/work-items/" + primaryId + "/transition", JsonSupport.object(
+                    "transitionKey", "open_to_ready"
+            )), 200).path("id").asText());
 
             APIResponse listResponse = session.get("/api/v1/projects/" + workspace.projectId() + "/work-items?limit=5");
             ApiDiagnostics.writeSnippet("work-items-list-authenticated", "GET project work items with auth", listResponse);
@@ -85,6 +96,11 @@ class WorkItemCollaborationApiTest {
             String commentId = comment.path("id").asText();
             cleanup.delete(session, "/api/v1/work-items/" + primaryId + "/comments/" + commentId);
             assertEquals("Playwright collaboration coverage.", comment.path("bodyMarkdown").asText());
+            JsonNode updatedComment = session.requireJson(session.patch("/api/v1/work-items/" + primaryId + "/comments/" + commentId, JsonSupport.object(
+                    "bodyMarkdown", "Playwright collaboration coverage updated.",
+                    "visibility", "workspace"
+            )), 200);
+            assertEquals("Playwright collaboration coverage updated.", updatedComment.path("bodyMarkdown").asText(), updatedComment.toString());
             assertEquals(1, session.requireJson(session.get("/api/v1/work-items/" + primaryId + "/comments"), 200).size());
 
             JsonNode link = session.requireJson(session.post("/api/v1/work-items/" + primaryId + "/links", JsonSupport.object(
@@ -94,12 +110,14 @@ class WorkItemCollaborationApiTest {
             String linkId = link.path("id").asText();
             cleanup.delete(session, "/api/v1/work-items/" + primaryId + "/links/" + linkId);
             assertEquals(peerId, link.path("targetWorkItemId").asText());
+            assertTrue(session.requireJson(session.get("/api/v1/work-items/" + primaryId + "/links"), 200).isArray());
 
             JsonNode watcher = session.requireJson(session.post("/api/v1/work-items/" + primaryId + "/watchers", JsonSupport.object(
                     "userId", session.userId()
             )), 201);
             cleanup.delete(session, "/api/v1/work-items/" + primaryId + "/watchers/" + session.userId());
             assertEquals(session.userId(), watcher.path("userId").asText());
+            assertTrue(session.requireJson(session.get("/api/v1/work-items/" + primaryId + "/watchers"), 200).isArray());
 
             JsonNode workLog = session.requireJson(session.post("/api/v1/work-items/" + primaryId + "/work-logs", JsonSupport.object(
                     "userId", session.userId(),
@@ -111,6 +129,15 @@ class WorkItemCollaborationApiTest {
             String workLogId = workLog.path("id").asText();
             cleanup.delete(session, "/api/v1/work-items/" + primaryId + "/work-logs/" + workLogId);
             assertEquals(45, workLog.path("minutesSpent").asInt());
+            JsonNode updatedWorkLog = session.requireJson(session.patch("/api/v1/work-items/" + primaryId + "/work-logs/" + workLogId, JsonSupport.object(
+                    "userId", session.userId(),
+                    "minutesSpent", 60,
+                    "workDate", "2026-04-21",
+                    "startedAt", "2026-04-21T15:00:00Z",
+                    "descriptionMarkdown", "Playwright API collaboration coverage updated."
+            )), 200);
+            assertEquals(60, updatedWorkLog.path("minutesSpent").asInt(), updatedWorkLog.toString());
+            assertTrue(session.requireJson(session.get("/api/v1/work-items/" + primaryId + "/work-logs"), 200).isArray());
 
             JsonNode attachment = session.requireJson(session.post("/api/v1/work-items/" + primaryId + "/attachments", JsonSupport.object(
                     "filename", "playwright-notes.txt",
@@ -123,6 +150,11 @@ class WorkItemCollaborationApiTest {
             String attachmentId = attachment.path("id").asText();
             cleanup.delete(session, "/api/v1/work-items/" + primaryId + "/attachments/" + attachmentId);
             assertEquals("playwright-notes.txt", attachment.path("filename").asText());
+            assertTrue(session.requireJson(session.get("/api/v1/work-items/" + primaryId + "/attachments"), 200).isArray());
+
+            assertTrue(session.requireJson(session.get("/api/v1/work-items/" + primaryId + "/activity?limit=5"), 200).path("items").isArray());
+            assertTrue(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/activity?limit=5"), 200).path("items").isArray());
+            assertTrue(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/projects/" + workspace.projectId() + "/activity?limit=5"), 200).path("items").isArray());
         }
     }
 

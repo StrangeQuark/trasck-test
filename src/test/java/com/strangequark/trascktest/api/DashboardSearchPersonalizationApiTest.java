@@ -46,6 +46,12 @@ class DashboardSearchPersonalizationApiTest {
             String savedFilterId = savedFilter.path("id").asText();
             cleanup.delete(session, "/api/v1/saved-filters/" + savedFilterId);
             assertEquals("project", savedFilter.path("visibility").asText());
+            assertEquals(savedFilterId, session.requireJson(session.get("/api/v1/saved-filters/" + savedFilterId), 200).path("id").asText());
+            JsonNode updatedSavedFilter = session.requireJson(session.patch("/api/v1/saved-filters/" + savedFilterId, JsonSupport.object(
+                    "name", "Playwright Filter Updated " + suffix
+            )), 200);
+            assertEquals("Playwright Filter Updated " + suffix, updatedSavedFilter.path("name").asText(), updatedSavedFilter.toString());
+            assertTrue(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/saved-filters"), 200).isArray());
             assertTrue(session.requireJson(session.get("/api/v1/projects/" + workspace.projectId() + "/saved-filters"), 200).isArray());
             JsonNode executed = session.requireJson(session.get("/api/v1/saved-filters/" + savedFilterId + "/work-items?limit=5"), 200);
             assertTrue(executed.path("items").isArray(), executed.toString());
@@ -59,6 +65,12 @@ class DashboardSearchPersonalizationApiTest {
             String dashboardId = dashboard.path("id").asText();
             cleanup.delete(session, "/api/v1/dashboards/" + dashboardId);
             assertEquals("project", dashboard.path("visibility").asText());
+            assertEquals(dashboardId, session.requireJson(session.get("/api/v1/dashboards/" + dashboardId), 200).path("id").asText());
+            JsonNode updatedDashboard = session.requireJson(session.patch("/api/v1/dashboards/" + dashboardId, JsonSupport.object(
+                    "name", "Playwright Dashboard Updated " + suffix
+            )), 200);
+            assertEquals("Playwright Dashboard Updated " + suffix, updatedDashboard.path("name").asText(), updatedDashboard.toString());
+            assertTrue(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/dashboards"), 200).isArray());
             assertTrue(session.requireJson(session.get("/api/v1/projects/" + workspace.projectId() + "/dashboards"), 200).isArray());
 
             APIResponse widgetResponse = session.post("/api/v1/dashboards/" + dashboardId + "/widgets", JsonSupport.object(
@@ -74,6 +86,11 @@ class DashboardSearchPersonalizationApiTest {
             JsonNode widget = session.requireJson(widgetResponse, 201);
             cleanup.delete(session, "/api/v1/dashboards/" + dashboardId + "/widgets/" + widget.path("id").asText());
             assertEquals("custom_summary", widget.path("widgetType").asText());
+            JsonNode updatedWidget = session.requireJson(session.patch("/api/v1/dashboards/" + dashboardId + "/widgets/" + widget.path("id").asText(), JsonSupport.object(
+                    "title", "Playwright Widget Updated",
+                    "positionX", 1
+            )), 200);
+            assertEquals("Playwright Widget Updated", updatedWidget.path("title").asText(), updatedWidget.toString());
             JsonNode rendered = session.requireJson(session.get("/api/v1/dashboards/" + dashboardId + "/render"), 200);
             assertTrue(rendered.path("widgets").isArray(), rendered.toString());
 
@@ -87,6 +104,13 @@ class DashboardSearchPersonalizationApiTest {
             String viewId = savedView.path("id").asText();
             cleanup.delete(session, "/api/v1/personalization/views/" + viewId);
             assertEquals("work_item_list", savedView.path("viewType").asText());
+            assertEquals(viewId, session.requireJson(session.get("/api/v1/personalization/views/" + viewId), 200).path("id").asText());
+            JsonNode updatedView = session.requireJson(session.patch("/api/v1/personalization/views/" + viewId, JsonSupport.object(
+                    "name", "Playwright View Updated " + suffix
+            )), 200);
+            assertEquals("Playwright View Updated " + suffix, updatedView.path("name").asText(), updatedView.toString());
+            assertTrue(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/personalization/views"), 200).isArray());
+            assertTrue(session.requireJson(session.get("/api/v1/projects/" + workspace.projectId() + "/personalization/views"), 200).isArray());
 
             JsonNode favorite = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/personalization/favorites", JsonSupport.object(
                     "entityType", "dashboard",
@@ -94,6 +118,7 @@ class DashboardSearchPersonalizationApiTest {
             )), 201);
             cleanup.delete(session, "/api/v1/personalization/favorites/" + favorite.path("id").asText());
             assertEquals("dashboard", favorite.path("entityType").asText());
+            assertTrue(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/personalization/favorites"), 200).isArray());
 
             JsonNode recentItem = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/personalization/recent-items", JsonSupport.object(
                     "entityType", "saved_filter",
@@ -101,6 +126,7 @@ class DashboardSearchPersonalizationApiTest {
             )), 200);
             cleanup.delete(session, "/api/v1/personalization/recent-items/" + recentItem.path("id").asText());
             assertEquals("saved_filter", recentItem.path("entityType").asText());
+            assertTrue(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/personalization/recent-items"), 200).isArray());
         }
     }
 }

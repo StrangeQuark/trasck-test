@@ -1,5 +1,5 @@
-status	method	path	tags	operationId
-covered	GET	/api/trasck/health	health-controller	healthcheck
+status	method	path	tags	operationId	coverageOwner
+covered	GET	/api/trasck/health	health-controller	healthcheck	HealthApiTest#backendHealthEndpointResponds
 planned-high-risk	POST	/api/v1/agent-callbacks/{providerKey}	agent-task-controller	callback
 planned-high-risk	PATCH	/api/v1/agent-providers/{providerId}	agent-provider-controller	updateProvider
 planned-high-risk	POST	/api/v1/agent-providers/{providerId}/callback-keys/rotate	agent-provider-controller	rotateCallbackKey
@@ -16,15 +16,15 @@ planned-high-risk	POST	/api/v1/agent-tasks/{taskId}/request-changes	agent-task-c
 planned-high-risk	POST	/api/v1/agent-tasks/{taskId}/retry	agent-task-controller	retryTask
 planned-high-risk	POST	/api/v1/agent-tasks/{taskId}/worker-dispatch	agent-task-controller	workerDispatch
 planned-high-risk	PATCH	/api/v1/agents/{profileId}	agent-profile-controller	updateProfile
-covered	GET	/api/v1/auth/csrf	auth-controller	csrf
-covered	POST	/api/v1/auth/login	auth-controller	login
+covered	GET	/api/v1/auth/csrf	auth-controller	csrf	CsrfApiTest#csrfEndpointReturnsBrowserTokenMetadata
+covered	POST	/api/v1/auth/login	auth-controller	login	AuthSessionApiTest#loginEstablishesCookieAndBearerSessionsWhenCredentialsAreProvided
 planned-high-risk	POST	/api/v1/auth/logout	auth-controller	logout
-covered	GET	/api/v1/auth/me	auth-controller	me
+covered	GET	/api/v1/auth/me	auth-controller	me	AuthSessionApiTest#loginEstablishesCookieAndBearerSessionsWhenCredentialsAreProvided
 planned-high-risk	POST	/api/v1/auth/oauth/login	auth-controller	oauthLogin
 planned-high-risk	POST	/api/v1/auth/register	auth-controller	register
-covered	GET	/api/v1/auth/tokens/personal	auth-controller	listPersonalTokens
-covered	POST	/api/v1/auth/tokens/personal	auth-controller	createPersonalToken
-covered	DELETE	/api/v1/auth/tokens/{tokenId}	auth-controller	revokePersonalToken
+covered	GET	/api/v1/auth/tokens/personal	auth-controller	listPersonalTokens	ApiTokenSecurityApiTest#personalTokensHideRawValuesOnListEnforceScopesAndStopWorkingAfterRevocation
+covered	POST	/api/v1/auth/tokens/personal	auth-controller	createPersonalToken	ApiTokenSecurityApiTest#personalTokensHideRawValuesOnListEnforceScopesAndStopWorkingAfterRevocation
+covered	DELETE	/api/v1/auth/tokens/{tokenId}	auth-controller	revokePersonalToken	ApiTokenSecurityApiTest#personalTokensHideRawValuesOnListEnforceScopesAndStopWorkingAfterRevocation
 planned-high-risk	GET	/api/v1/automation-jobs/{jobId}	automation-controller	getJob
 planned-high-risk	POST	/api/v1/automation-jobs/{jobId}/run	automation-controller	runJob
 planned-high-risk	DELETE	/api/v1/automation-rules/{ruleId}	automation-controller	deleteRule
@@ -38,42 +38,42 @@ planned-high-risk	DELETE	/api/v1/automation-rules/{ruleId}/conditions/{condition
 planned-high-risk	PATCH	/api/v1/automation-rules/{ruleId}/conditions/{conditionId}	automation-controller	updateCondition
 planned-high-risk	POST	/api/v1/automation-rules/{ruleId}/execute	automation-controller	executeRule
 planned-high-risk	GET	/api/v1/automation-rules/{ruleId}/jobs	automation-controller	listJobs
-covered	DELETE	/api/v1/boards/{boardId}	board-controller	archiveBoard
-planned	GET	/api/v1/boards/{boardId}	board-controller	getBoard
-planned	PATCH	/api/v1/boards/{boardId}	board-controller	updateBoard
-covered	GET	/api/v1/boards/{boardId}/columns	board-controller	listColumns
-covered	POST	/api/v1/boards/{boardId}/columns	board-controller	createColumn
-covered	DELETE	/api/v1/boards/{boardId}/columns/{columnId}	board-controller	deleteColumn
-planned	PATCH	/api/v1/boards/{boardId}/columns/{columnId}	board-controller	updateColumn
-planned	GET	/api/v1/boards/{boardId}/swimlanes	board-controller	listSwimlanes
-planned	POST	/api/v1/boards/{boardId}/swimlanes	board-controller	createSwimlane
-planned	DELETE	/api/v1/boards/{boardId}/swimlanes/{swimlaneId}	board-controller	deleteSwimlane
-planned	PATCH	/api/v1/boards/{boardId}/swimlanes/{swimlaneId}	board-controller	updateSwimlane
-covered	GET	/api/v1/boards/{boardId}/work-items	board-controller	listBoardWorkItems
-planned	POST	/api/v1/boards/{boardId}/work-items/{workItemId}/move	board-controller	moveBoardWorkItem
-planned	POST	/api/v1/boards/{boardId}/work-items/{workItemId}/rank	board-controller	rankBoardWorkItem
-planned	POST	/api/v1/boards/{boardId}/work-items/{workItemId}/transition	board-controller	transitionBoardWorkItem
-covered	DELETE	/api/v1/custom-fields/{customFieldId}	custom-field-controller	archiveCustomField
-covered	GET	/api/v1/custom-fields/{customFieldId}	custom-field-controller	getCustomField
-covered	PATCH	/api/v1/custom-fields/{customFieldId}	custom-field-controller	updateCustomField
-covered	GET	/api/v1/custom-fields/{customFieldId}/contexts	custom-field-controller	listContexts
-covered	POST	/api/v1/custom-fields/{customFieldId}/contexts	custom-field-controller	createContext
-covered	DELETE	/api/v1/custom-fields/{customFieldId}/contexts/{contextId}	custom-field-controller	deleteContext
-covered	PATCH	/api/v1/custom-fields/{customFieldId}/contexts/{contextId}	custom-field-controller	updateContext
-covered	GET	/api/v1/custom-fields/{customFieldId}/field-configurations	custom-field-controller	listFieldConfigurationsForField
-covered	DELETE	/api/v1/dashboards/{dashboardId}	dashboard-controller	delete_2
-planned	GET	/api/v1/dashboards/{dashboardId}	dashboard-controller	get_3
-planned	PATCH	/api/v1/dashboards/{dashboardId}	dashboard-controller	update_3
-covered	GET	/api/v1/dashboards/{dashboardId}/render	dashboard-controller	render
-covered	POST	/api/v1/dashboards/{dashboardId}/widgets	dashboard-controller	createWidget
-covered	DELETE	/api/v1/dashboards/{dashboardId}/widgets/{widgetId}	dashboard-controller	deleteWidget
-planned	PATCH	/api/v1/dashboards/{dashboardId}/widgets/{widgetId}	dashboard-controller	updateWidget
+covered	DELETE	/api/v1/boards/{boardId}	board-controller	archiveBoard	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/boards/{boardId}	board-controller	getBoard	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	PATCH	/api/v1/boards/{boardId}	board-controller	updateBoard	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/boards/{boardId}/columns	board-controller	listColumns	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/boards/{boardId}/columns	board-controller	createColumn	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	DELETE	/api/v1/boards/{boardId}/columns/{columnId}	board-controller	deleteColumn	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	PATCH	/api/v1/boards/{boardId}/columns/{columnId}	board-controller	updateColumn	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/boards/{boardId}/swimlanes	board-controller	listSwimlanes	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/boards/{boardId}/swimlanes	board-controller	createSwimlane	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	DELETE	/api/v1/boards/{boardId}/swimlanes/{swimlaneId}	board-controller	deleteSwimlane	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	PATCH	/api/v1/boards/{boardId}/swimlanes/{swimlaneId}	board-controller	updateSwimlane	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/boards/{boardId}/work-items	board-controller	listBoardWorkItems	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/boards/{boardId}/work-items/{workItemId}/move	board-controller	moveBoardWorkItem	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/boards/{boardId}/work-items/{workItemId}/rank	board-controller	rankBoardWorkItem	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/boards/{boardId}/work-items/{workItemId}/transition	board-controller	transitionBoardWorkItem	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	DELETE	/api/v1/custom-fields/{customFieldId}	custom-field-controller	archiveCustomField	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	GET	/api/v1/custom-fields/{customFieldId}	custom-field-controller	getCustomField	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	PATCH	/api/v1/custom-fields/{customFieldId}	custom-field-controller	updateCustomField	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	GET	/api/v1/custom-fields/{customFieldId}/contexts	custom-field-controller	listContexts	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	POST	/api/v1/custom-fields/{customFieldId}/contexts	custom-field-controller	createContext	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	DELETE	/api/v1/custom-fields/{customFieldId}/contexts/{contextId}	custom-field-controller	deleteContext	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	PATCH	/api/v1/custom-fields/{customFieldId}/contexts/{contextId}	custom-field-controller	updateContext	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	GET	/api/v1/custom-fields/{customFieldId}/field-configurations	custom-field-controller	listFieldConfigurationsForField	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	DELETE	/api/v1/dashboards/{dashboardId}	dashboard-controller	delete_2	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	GET	/api/v1/dashboards/{dashboardId}	dashboard-controller	get_3	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	PATCH	/api/v1/dashboards/{dashboardId}	dashboard-controller	update_3	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	GET	/api/v1/dashboards/{dashboardId}/render	dashboard-controller	render	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	POST	/api/v1/dashboards/{dashboardId}/widgets	dashboard-controller	createWidget	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	DELETE	/api/v1/dashboards/{dashboardId}/widgets/{widgetId}	dashboard-controller	deleteWidget	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	PATCH	/api/v1/dashboards/{dashboardId}/widgets/{widgetId}	dashboard-controller	updateWidget	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 planned-high-risk	GET	/api/v1/email-deliveries/{deliveryId}	automation-controller	getEmailDelivery
 planned-high-risk	POST	/api/v1/email-deliveries/{deliveryId}/cancel	automation-controller	cancelEmailDelivery
 planned-high-risk	POST	/api/v1/email-deliveries/{deliveryId}/retry	automation-controller	retryEmailDelivery
-covered	DELETE	/api/v1/field-configurations/{fieldConfigurationId}	custom-field-controller	deleteFieldConfiguration
-covered	GET	/api/v1/field-configurations/{fieldConfigurationId}	custom-field-controller	getFieldConfiguration
-covered	PATCH	/api/v1/field-configurations/{fieldConfigurationId}	custom-field-controller	updateFieldConfiguration
+covered	DELETE	/api/v1/field-configurations/{fieldConfigurationId}	custom-field-controller	deleteFieldConfiguration	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	GET	/api/v1/field-configurations/{fieldConfigurationId}	custom-field-controller	getFieldConfiguration	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	PATCH	/api/v1/field-configurations/{fieldConfigurationId}	custom-field-controller	updateFieldConfiguration	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 planned	GET	/api/v1/import-conflict-resolution-jobs/{jobId}	import-job-controller	getConflictResolutionJob
 planned	POST	/api/v1/import-conflict-resolution-jobs/{jobId}/cancel	import-job-controller	cancelConflictResolutionJob
 planned	POST	/api/v1/import-conflict-resolution-jobs/{jobId}/retry	import-job-controller	retryConflictResolutionJob
@@ -122,52 +122,52 @@ planned	GET	/api/v1/import-transform-presets/{presetId}/versions	import-job-cont
 planned	POST	/api/v1/import-transform-presets/{presetId}/versions/{versionId}/clone	import-job-controller	cloneTransformPresetVersion
 planned	POST	/api/v1/import-transform-presets/{presetId}/versions/{versionId}/retarget	import-job-controller	cloneAndRetargetTransformPresetVersion
 planned	POST	/api/v1/import-transform-presets/{presetId}/versions/{versionId}/retarget-preview	import-job-controller	previewCloneAndRetargetTransformPresetVersion
-covered	DELETE	/api/v1/iterations/{iterationId}	planning-controller	cancelIteration
-planned	GET	/api/v1/iterations/{iterationId}	planning-controller	getIteration
-planned	PATCH	/api/v1/iterations/{iterationId}	planning-controller	updateIteration
-planned	POST	/api/v1/iterations/{iterationId}/close	planning-controller	closeIteration
-planned	POST	/api/v1/iterations/{iterationId}/commit	planning-controller	commitIteration
-planned	GET	/api/v1/iterations/{iterationId}/work-items	planning-controller	listIterationWorkItems
-planned	POST	/api/v1/iterations/{iterationId}/work-items	planning-controller	addWorkItem
-planned	DELETE	/api/v1/iterations/{iterationId}/work-items/{workItemId}	planning-controller	removeWorkItem
-planned	DELETE	/api/v1/notification-defaults/{preferenceId}	notification-controller	deleteDefaultPreference
-planned	PATCH	/api/v1/notification-defaults/{preferenceId}	notification-controller	updateDefaultPreference
-planned	DELETE	/api/v1/notification-preferences/{preferenceId}	notification-controller	deletePreference
-planned	PATCH	/api/v1/notification-preferences/{preferenceId}	notification-controller	updatePreference
+covered	DELETE	/api/v1/iterations/{iterationId}	planning-controller	cancelIteration	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/iterations/{iterationId}	planning-controller	getIteration	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	PATCH	/api/v1/iterations/{iterationId}	planning-controller	updateIteration	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/iterations/{iterationId}/close	planning-controller	closeIteration	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/iterations/{iterationId}/commit	planning-controller	commitIteration	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/iterations/{iterationId}/work-items	planning-controller	listIterationWorkItems	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/iterations/{iterationId}/work-items	planning-controller	addWorkItem	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	DELETE	/api/v1/iterations/{iterationId}/work-items/{workItemId}	planning-controller	removeWorkItem	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	DELETE	/api/v1/notification-defaults/{preferenceId}	notification-controller	deleteDefaultPreference	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
+covered	PATCH	/api/v1/notification-defaults/{preferenceId}	notification-controller	updateDefaultPreference	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
+covered	DELETE	/api/v1/notification-preferences/{preferenceId}	notification-controller	deletePreference	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
+covered	PATCH	/api/v1/notification-preferences/{preferenceId}	notification-controller	updatePreference	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
 planned	PATCH	/api/v1/notifications/{notificationId}/read	notification-controller	markRead
-covered	DELETE	/api/v1/personalization/favorites/{favoriteId}	personalization-controller	deleteFavorite
-covered	DELETE	/api/v1/personalization/recent-items/{recentItemId}	personalization-controller	deleteRecentItem
-covered	DELETE	/api/v1/personalization/views/{viewId}	personalization-controller	deleteView
-planned	GET	/api/v1/personalization/views/{viewId}	personalization-controller	getView
-planned	PATCH	/api/v1/personalization/views/{viewId}	personalization-controller	updateView
-covered	GET	/api/v1/projects/{projectId}/boards	board-controller	listProjectBoards
-covered	POST	/api/v1/projects/{projectId}/boards	board-controller	createBoard
-covered	GET	/api/v1/projects/{projectId}/dashboards	dashboard-controller	listByProject_3
-covered	GET	/api/v1/projects/{projectId}/iterations	planning-controller	listIterations
-covered	POST	/api/v1/projects/{projectId}/iterations	planning-controller	createIteration
-planned	GET	/api/v1/projects/{projectId}/personalization/views	personalization-controller	listProjectViews
-covered	GET	/api/v1/projects/{projectId}/releases	release-roadmap-controller	listReleases
-covered	POST	/api/v1/projects/{projectId}/releases	release-roadmap-controller	createRelease
-covered	GET	/api/v1/projects/{projectId}/report-query-catalog	report-query-catalog-controller	listByProject_2
-covered	GET	/api/v1/projects/{projectId}/roadmaps	release-roadmap-controller	listProjectRoadmaps
-covered	GET	/api/v1/projects/{projectId}/saved-filters	saved-filter-controller	listByProject_1
-covered	GET	/api/v1/projects/{projectId}/security-policy	workspace-security-policy-controller	getProjectSecurityPolicy
-covered	PATCH	/api/v1/projects/{projectId}/security-policy	workspace-security-policy-controller	updateProjectSecurityPolicy
-covered	GET	/api/v1/projects/{projectId}/teams	team-controller	listProjectTeams
-covered	DELETE	/api/v1/projects/{projectId}/teams/{teamId}	team-controller	removeProjectTeam
-covered	PUT	/api/v1/projects/{projectId}/teams/{teamId}	team-controller	assignProjectTeam
-covered	GET	/api/v1/projects/{projectId}/work-items	work-item-controller	listByProject
-covered	POST	/api/v1/projects/{projectId}/work-items	work-item-controller	create_3
+covered	DELETE	/api/v1/personalization/favorites/{favoriteId}	personalization-controller	deleteFavorite	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	DELETE	/api/v1/personalization/recent-items/{recentItemId}	personalization-controller	deleteRecentItem	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	DELETE	/api/v1/personalization/views/{viewId}	personalization-controller	deleteView	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	GET	/api/v1/personalization/views/{viewId}	personalization-controller	getView	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	PATCH	/api/v1/personalization/views/{viewId}	personalization-controller	updateView	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	GET	/api/v1/projects/{projectId}/boards	board-controller	listProjectBoards	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/projects/{projectId}/boards	board-controller	createBoard	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/projects/{projectId}/dashboards	dashboard-controller	listByProject_3	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	GET	/api/v1/projects/{projectId}/iterations	planning-controller	listIterations	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/projects/{projectId}/iterations	planning-controller	createIteration	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/projects/{projectId}/personalization/views	personalization-controller	listProjectViews	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	GET	/api/v1/projects/{projectId}/releases	release-roadmap-controller	listReleases	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/projects/{projectId}/releases	release-roadmap-controller	createRelease	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/projects/{projectId}/report-query-catalog	report-query-catalog-controller	listByProject_2	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	GET	/api/v1/projects/{projectId}/roadmaps	release-roadmap-controller	listProjectRoadmaps	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/projects/{projectId}/saved-filters	saved-filter-controller	listByProject_1	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	GET	/api/v1/projects/{projectId}/security-policy	workspace-security-policy-controller	getProjectSecurityPolicy	SecurityPolicyApiTest#authenticatedWorkspaceAndProjectPoliciesExposeEffectiveLimitsAndRejectInvalidUpdates
+covered	PATCH	/api/v1/projects/{projectId}/security-policy	workspace-security-policy-controller	updateProjectSecurityPolicy	SecurityPolicyApiTest#authenticatedWorkspaceAndProjectPoliciesExposeEffectiveLimitsAndRejectInvalidUpdates
+covered	GET	/api/v1/projects/{projectId}/teams	team-controller	listProjectTeams	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	DELETE	/api/v1/projects/{projectId}/teams/{teamId}	team-controller	removeProjectTeam	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	PUT	/api/v1/projects/{projectId}/teams/{teamId}	team-controller	assignProjectTeam	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/projects/{projectId}/work-items	work-item-controller	listByProject	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	POST	/api/v1/projects/{projectId}/work-items	work-item-controller	create_3	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
 planned	GET	/api/v1/public/projects/{projectId}	public-project-controller	getPublicProject
-covered	DELETE	/api/v1/releases/{releaseId}	release-roadmap-controller	deleteRelease
-planned	GET	/api/v1/releases/{releaseId}	release-roadmap-controller	getRelease
-planned	PATCH	/api/v1/releases/{releaseId}	release-roadmap-controller	updateRelease
-planned	GET	/api/v1/releases/{releaseId}/work-items	release-roadmap-controller	listReleaseWorkItems
-planned	POST	/api/v1/releases/{releaseId}/work-items	release-roadmap-controller	addReleaseWorkItem
-planned	DELETE	/api/v1/releases/{releaseId}/work-items/{workItemId}	release-roadmap-controller	removeReleaseWorkItem
-covered	DELETE	/api/v1/report-query-catalog/{queryId}	report-query-catalog-controller	delete_1
-covered	GET	/api/v1/report-query-catalog/{queryId}	report-query-catalog-controller	get_2
-covered	PATCH	/api/v1/report-query-catalog/{queryId}	report-query-catalog-controller	update_2
+covered	DELETE	/api/v1/releases/{releaseId}	release-roadmap-controller	deleteRelease	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/releases/{releaseId}	release-roadmap-controller	getRelease	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	PATCH	/api/v1/releases/{releaseId}	release-roadmap-controller	updateRelease	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/releases/{releaseId}/work-items	release-roadmap-controller	listReleaseWorkItems	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/releases/{releaseId}/work-items	release-roadmap-controller	addReleaseWorkItem	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	DELETE	/api/v1/releases/{releaseId}/work-items/{workItemId}	release-roadmap-controller	removeReleaseWorkItem	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	DELETE	/api/v1/report-query-catalog/{queryId}	report-query-catalog-controller	delete_1	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	GET	/api/v1/report-query-catalog/{queryId}	report-query-catalog-controller	get_2	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	PATCH	/api/v1/report-query-catalog/{queryId}	report-query-catalog-controller	update_2	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 planned	GET	/api/v1/reports/iterations/{iterationId}/report	reporting-controller	iterationReport
 planned	GET	/api/v1/reports/programs/{programId}/dashboard-summary	reporting-controller	programDashboardSummary
 planned	GET	/api/v1/reports/projects/{projectId}/dashboard-summary	reporting-controller	projectDashboardSummary
@@ -180,46 +180,46 @@ planned	GET	/api/v1/reports/work-items/{workItemId}/team-history	reporting-contr
 planned	GET	/api/v1/reports/work-items/{workItemId}/work-log-summary	reporting-controller	workLogSummary
 planned	GET	/api/v1/reports/workspaces/{workspaceId}/dashboard-summary	reporting-controller	workspaceDashboardSummary
 planned-high-risk	GET	/api/v1/reports/workspaces/{workspaceId}/imports/completions	reporting-controller	workspaceImportCompletions
-covered	GET	/api/v1/reports/workspaces/{workspaceId}/snapshot-retention-policy	reporting-controller	getSnapshotRetentionPolicy
-covered	PUT	/api/v1/reports/workspaces/{workspaceId}/snapshot-retention-policy	reporting-controller	updateSnapshotRetentionPolicy
+covered	GET	/api/v1/reports/workspaces/{workspaceId}/snapshot-retention-policy	reporting-controller	getSnapshotRetentionPolicy	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	PUT	/api/v1/reports/workspaces/{workspaceId}/snapshot-retention-policy	reporting-controller	updateSnapshotRetentionPolicy	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 planned	POST	/api/v1/reports/workspaces/{workspaceId}/snapshots/backfill	reporting-controller	backfillWorkspaceSnapshots
 planned	POST	/api/v1/reports/workspaces/{workspaceId}/snapshots/reconcile	reporting-controller	reconcileWorkspaceSnapshots
 planned	POST	/api/v1/reports/workspaces/{workspaceId}/snapshots/rollups/backfill	reporting-controller	backfillWorkspaceRollups
 planned	POST	/api/v1/reports/workspaces/{workspaceId}/snapshots/rollups/run	reporting-controller	runWorkspaceRollups
 planned	POST	/api/v1/reports/workspaces/{workspaceId}/snapshots/run	reporting-controller	runWorkspaceSnapshots
-covered	DELETE	/api/v1/roadmaps/{roadmapId}	release-roadmap-controller	deleteRoadmap
-planned	GET	/api/v1/roadmaps/{roadmapId}	release-roadmap-controller	getRoadmap
-planned	PATCH	/api/v1/roadmaps/{roadmapId}	release-roadmap-controller	updateRoadmap
-planned	GET	/api/v1/roadmaps/{roadmapId}/items	release-roadmap-controller	listRoadmapItems
-planned	POST	/api/v1/roadmaps/{roadmapId}/items	release-roadmap-controller	createRoadmapItem
-planned	DELETE	/api/v1/roadmaps/{roadmapId}/items/{roadmapItemId}	release-roadmap-controller	deleteRoadmapItem
-planned	PATCH	/api/v1/roadmaps/{roadmapId}/items/{roadmapItemId}	release-roadmap-controller	updateRoadmapItem
-covered	DELETE	/api/v1/saved-filters/{savedFilterId}	saved-filter-controller	delete
-planned	GET	/api/v1/saved-filters/{savedFilterId}	saved-filter-controller	get_1
-planned	PATCH	/api/v1/saved-filters/{savedFilterId}	saved-filter-controller	update_1
-covered	GET	/api/v1/saved-filters/{savedFilterId}/work-items	saved-filter-controller	executeWorkItems
-covered	DELETE	/api/v1/screens/{screenId}	custom-field-controller	deleteScreen
-covered	GET	/api/v1/screens/{screenId}	custom-field-controller	getScreen
-covered	PATCH	/api/v1/screens/{screenId}	custom-field-controller	updateScreen
-covered	GET	/api/v1/screens/{screenId}/assignments	custom-field-controller	listScreenAssignments
-covered	POST	/api/v1/screens/{screenId}/assignments	custom-field-controller	addScreenAssignment
-covered	DELETE	/api/v1/screens/{screenId}/assignments/{assignmentId}	custom-field-controller	deleteScreenAssignment
-covered	PATCH	/api/v1/screens/{screenId}/assignments/{assignmentId}	custom-field-controller	updateScreenAssignment
-covered	GET	/api/v1/screens/{screenId}/fields	custom-field-controller	listScreenFields
-covered	POST	/api/v1/screens/{screenId}/fields	custom-field-controller	addScreenField
-covered	DELETE	/api/v1/screens/{screenId}/fields/{screenFieldId}	custom-field-controller	deleteScreenField
-covered	PATCH	/api/v1/screens/{screenId}/fields/{screenFieldId}	custom-field-controller	updateScreenField
-covered	POST	/api/v1/setup	initial-setup-controller	createInitialSetup
-covered	GET	/api/v1/system-admins	system-admin-controller	listSystemAdmins
+covered	DELETE	/api/v1/roadmaps/{roadmapId}	release-roadmap-controller	deleteRoadmap	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/roadmaps/{roadmapId}	release-roadmap-controller	getRoadmap	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	PATCH	/api/v1/roadmaps/{roadmapId}	release-roadmap-controller	updateRoadmap	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/roadmaps/{roadmapId}/items	release-roadmap-controller	listRoadmapItems	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/roadmaps/{roadmapId}/items	release-roadmap-controller	createRoadmapItem	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	DELETE	/api/v1/roadmaps/{roadmapId}/items/{roadmapItemId}	release-roadmap-controller	deleteRoadmapItem	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	PATCH	/api/v1/roadmaps/{roadmapId}/items/{roadmapItemId}	release-roadmap-controller	updateRoadmapItem	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	DELETE	/api/v1/saved-filters/{savedFilterId}	saved-filter-controller	delete	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	GET	/api/v1/saved-filters/{savedFilterId}	saved-filter-controller	get_1	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	PATCH	/api/v1/saved-filters/{savedFilterId}	saved-filter-controller	update_1	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	GET	/api/v1/saved-filters/{savedFilterId}/work-items	saved-filter-controller	executeWorkItems	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	DELETE	/api/v1/screens/{screenId}	custom-field-controller	deleteScreen	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	GET	/api/v1/screens/{screenId}	custom-field-controller	getScreen	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	PATCH	/api/v1/screens/{screenId}	custom-field-controller	updateScreen	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	GET	/api/v1/screens/{screenId}/assignments	custom-field-controller	listScreenAssignments	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	POST	/api/v1/screens/{screenId}/assignments	custom-field-controller	addScreenAssignment	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	DELETE	/api/v1/screens/{screenId}/assignments/{assignmentId}	custom-field-controller	deleteScreenAssignment	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	PATCH	/api/v1/screens/{screenId}/assignments/{assignmentId}	custom-field-controller	updateScreenAssignment	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	GET	/api/v1/screens/{screenId}/fields	custom-field-controller	listScreenFields	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	POST	/api/v1/screens/{screenId}/fields	custom-field-controller	addScreenField	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	DELETE	/api/v1/screens/{screenId}/fields/{screenFieldId}	custom-field-controller	deleteScreenField	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	PATCH	/api/v1/screens/{screenId}/fields/{screenFieldId}	custom-field-controller	updateScreenField	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	POST	/api/v1/setup	initial-setup-controller	createInitialSetup	SetupReadinessApiTest#setupBootstrapModeCanCreateAStackOnceAndThenReturnsConflict
+covered	GET	/api/v1/system-admins	system-admin-controller	listSystemAdmins	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
 planned-high-risk	POST	/api/v1/system-admins	system-admin-controller	grantSystemAdmin
 planned-high-risk	DELETE	/api/v1/system-admins/{userId}	system-admin-controller	revokeSystemAdmin
-covered	DELETE	/api/v1/teams/{teamId}	team-controller	archiveTeam
-planned	GET	/api/v1/teams/{teamId}	team-controller	getTeam
-planned	PATCH	/api/v1/teams/{teamId}	team-controller	updateTeam
+covered	DELETE	/api/v1/teams/{teamId}	team-controller	archiveTeam	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/teams/{teamId}	team-controller	getTeam	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	PATCH	/api/v1/teams/{teamId}	team-controller	updateTeam	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
 planned	GET	/api/v1/teams/{teamId}/dashboards	dashboard-controller	listByTeam_2
-planned	GET	/api/v1/teams/{teamId}/memberships	team-controller	listMemberships
-planned	POST	/api/v1/teams/{teamId}/memberships	team-controller	upsertMembership
-planned	DELETE	/api/v1/teams/{teamId}/memberships/{userId}	team-controller	removeMembership
+covered	GET	/api/v1/teams/{teamId}/memberships	team-controller	listMemberships	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/teams/{teamId}/memberships	team-controller	upsertMembership	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	DELETE	/api/v1/teams/{teamId}/memberships/{userId}	team-controller	removeMembership	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
 planned	GET	/api/v1/teams/{teamId}/personalization/views	personalization-controller	listTeamViews
 planned	GET	/api/v1/teams/{teamId}/report-query-catalog	report-query-catalog-controller	listByTeam_1
 planned	GET	/api/v1/teams/{teamId}/saved-filters	saved-filter-controller	listByTeam
@@ -229,41 +229,41 @@ planned-high-risk	POST	/api/v1/webhook-deliveries/{deliveryId}/retry	automation-
 planned-high-risk	DELETE	/api/v1/webhooks/{webhookId}	automation-controller	deleteWebhook
 planned-high-risk	PATCH	/api/v1/webhooks/{webhookId}	automation-controller	updateWebhook
 planned-high-risk	GET	/api/v1/webhooks/{webhookId}/deliveries	automation-controller	listWebhookDeliveries
-covered	DELETE	/api/v1/work-items/{workItemId}	work-item-controller	archive
-planned	GET	/api/v1/work-items/{workItemId}	work-item-controller	get
-covered	PATCH	/api/v1/work-items/{workItemId}	work-item-controller	update
-planned	GET	/api/v1/work-items/{workItemId}/activity	activity-controller	workItemActivity
-planned	POST	/api/v1/work-items/{workItemId}/assign	work-item-controller	assign
+covered	DELETE	/api/v1/work-items/{workItemId}	work-item-controller	archive	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	GET	/api/v1/work-items/{workItemId}	work-item-controller	get	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	PATCH	/api/v1/work-items/{workItemId}	work-item-controller	update	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	GET	/api/v1/work-items/{workItemId}/activity	activity-controller	workItemActivity	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	POST	/api/v1/work-items/{workItemId}/assign	work-item-controller	assign	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
 planned	POST	/api/v1/work-items/{workItemId}/assign-agent	agent-task-controller	assignAgent
-planned	GET	/api/v1/work-items/{workItemId}/attachments	work-item-controller	listAttachments
-covered	POST	/api/v1/work-items/{workItemId}/attachments	work-item-controller	addAttachmentMetadata
+covered	GET	/api/v1/work-items/{workItemId}/attachments	work-item-controller	listAttachments	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	POST	/api/v1/work-items/{workItemId}/attachments	work-item-controller	addAttachmentMetadata	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
 planned	POST	/api/v1/work-items/{workItemId}/attachments/files	work-item-controller	uploadAttachment
-covered	DELETE	/api/v1/work-items/{workItemId}/attachments/{attachmentId}	work-item-controller	removeAttachment
+covered	DELETE	/api/v1/work-items/{workItemId}/attachments/{attachmentId}	work-item-controller	removeAttachment	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
 planned	GET	/api/v1/work-items/{workItemId}/attachments/{attachmentId}/download	work-item-controller	downloadAttachment
-covered	GET	/api/v1/work-items/{workItemId}/comments	work-item-controller	listComments
-covered	POST	/api/v1/work-items/{workItemId}/comments	work-item-controller	createComment
-covered	DELETE	/api/v1/work-items/{workItemId}/comments/{commentId}	work-item-controller	deleteComment
-planned	PATCH	/api/v1/work-items/{workItemId}/comments/{commentId}	work-item-controller	updateComment
-covered	GET	/api/v1/work-items/{workItemId}/custom-fields	custom-field-controller	listValues
-covered	DELETE	/api/v1/work-items/{workItemId}/custom-fields/{customFieldId}	custom-field-controller	deleteValue
-covered	PUT	/api/v1/work-items/{workItemId}/custom-fields/{customFieldId}	custom-field-controller	setValue
+covered	GET	/api/v1/work-items/{workItemId}/comments	work-item-controller	listComments	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	POST	/api/v1/work-items/{workItemId}/comments	work-item-controller	createComment	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	DELETE	/api/v1/work-items/{workItemId}/comments/{commentId}	work-item-controller	deleteComment	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	PATCH	/api/v1/work-items/{workItemId}/comments/{commentId}	work-item-controller	updateComment	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	GET	/api/v1/work-items/{workItemId}/custom-fields	custom-field-controller	listValues	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	DELETE	/api/v1/work-items/{workItemId}/custom-fields/{customFieldId}	custom-field-controller	deleteValue	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	PUT	/api/v1/work-items/{workItemId}/custom-fields/{customFieldId}	custom-field-controller	setValue	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 planned	GET	/api/v1/work-items/{workItemId}/labels	work-item-controller	listWorkItemLabels
 planned	POST	/api/v1/work-items/{workItemId}/labels	work-item-controller	addLabel
 planned	DELETE	/api/v1/work-items/{workItemId}/labels/{labelId}	work-item-controller	removeLabel
-planned	GET	/api/v1/work-items/{workItemId}/links	work-item-controller	listLinks
-covered	POST	/api/v1/work-items/{workItemId}/links	work-item-controller	createLink
-covered	DELETE	/api/v1/work-items/{workItemId}/links/{linkId}	work-item-controller	deleteLink
-planned	POST	/api/v1/work-items/{workItemId}/rank	work-item-controller	rank
-planned	POST	/api/v1/work-items/{workItemId}/team	work-item-controller	setTeam
-planned	POST	/api/v1/work-items/{workItemId}/transition	work-item-controller	transition
-planned	GET	/api/v1/work-items/{workItemId}/watchers	work-item-controller	listWatchers
-covered	POST	/api/v1/work-items/{workItemId}/watchers	work-item-controller	addWatcher
-covered	DELETE	/api/v1/work-items/{workItemId}/watchers/{userId}	work-item-controller	removeWatcher
-planned	GET	/api/v1/work-items/{workItemId}/work-logs	work-item-controller	listWorkLogs
-covered	POST	/api/v1/work-items/{workItemId}/work-logs	work-item-controller	createWorkLog
-covered	DELETE	/api/v1/work-items/{workItemId}/work-logs/{workLogId}	work-item-controller	deleteWorkLog
-planned	PATCH	/api/v1/work-items/{workItemId}/work-logs/{workLogId}	work-item-controller	updateWorkLog
-planned	GET	/api/v1/workspaces/{workspaceId}/activity	activity-controller	workspaceActivity
+covered	GET	/api/v1/work-items/{workItemId}/links	work-item-controller	listLinks	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	POST	/api/v1/work-items/{workItemId}/links	work-item-controller	createLink	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	DELETE	/api/v1/work-items/{workItemId}/links/{linkId}	work-item-controller	deleteLink	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	POST	/api/v1/work-items/{workItemId}/rank	work-item-controller	rank	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	POST	/api/v1/work-items/{workItemId}/team	work-item-controller	setTeam	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/work-items/{workItemId}/transition	work-item-controller	transition	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	GET	/api/v1/work-items/{workItemId}/watchers	work-item-controller	listWatchers	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	POST	/api/v1/work-items/{workItemId}/watchers	work-item-controller	addWatcher	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	DELETE	/api/v1/work-items/{workItemId}/watchers/{userId}	work-item-controller	removeWatcher	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	GET	/api/v1/work-items/{workItemId}/work-logs	work-item-controller	listWorkLogs	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	POST	/api/v1/work-items/{workItemId}/work-logs	work-item-controller	createWorkLog	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	DELETE	/api/v1/work-items/{workItemId}/work-logs/{workLogId}	work-item-controller	deleteWorkLog	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	PATCH	/api/v1/work-items/{workItemId}/work-logs/{workLogId}	work-item-controller	updateWorkLog	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	GET	/api/v1/workspaces/{workspaceId}/activity	activity-controller	workspaceActivity	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
 planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/agent-dispatch-attempts	agent-dispatch-attempt-controller	listDispatchAttempts
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agent-dispatch-attempts/export	agent-dispatch-attempt-controller	exportDispatchAttempts
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agent-dispatch-attempts/prune	agent-dispatch-attempt-controller	pruneDispatchAttempts
@@ -278,8 +278,8 @@ planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerK
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agent-workers/{providerKey}/tasks/{taskId}/retry	agent-worker-controller	retry
 planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/agents	agent-profile-controller	listProfiles
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/agents	agent-profile-controller	createProfile
-covered	GET	/api/v1/workspaces/{workspaceId}/audit-log	audit-controller	listAuditLog
-covered	GET	/api/v1/workspaces/{workspaceId}/audit-retention-policy	audit-controller	getRetentionPolicy
+covered	GET	/api/v1/workspaces/{workspaceId}/audit-log	audit-controller	listAuditLog	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
+covered	GET	/api/v1/workspaces/{workspaceId}/audit-retention-policy	audit-controller	getRetentionPolicy	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
 planned-high-risk	PUT	/api/v1/workspaces/{workspaceId}/audit-retention-policy	audit-controller	updateRetentionPolicy
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/audit-retention-policy/export	audit-controller	exportRetentionCandidates
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/audit-retention-policy/prune	audit-controller	pruneRetentionCandidates
@@ -292,20 +292,20 @@ planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/automation-worker-runs/e
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/automation-worker-runs/prune	automation-controller	pruneWorkerRuns
 planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/automation-worker-settings	automation-controller	getWorkerSettings
 planned-high-risk	PATCH	/api/v1/workspaces/{workspaceId}/automation-worker-settings	automation-controller	updateWorkerSettings
-covered	GET	/api/v1/workspaces/{workspaceId}/custom-fields	custom-field-controller	listCustomFields
-covered	POST	/api/v1/workspaces/{workspaceId}/custom-fields	custom-field-controller	createCustomField
-planned	GET	/api/v1/workspaces/{workspaceId}/dashboards	dashboard-controller	list_2
-covered	POST	/api/v1/workspaces/{workspaceId}/dashboards	dashboard-controller	create_2
+covered	GET	/api/v1/workspaces/{workspaceId}/custom-fields	custom-field-controller	listCustomFields	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	POST	/api/v1/workspaces/{workspaceId}/custom-fields	custom-field-controller	createCustomField	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	GET	/api/v1/workspaces/{workspaceId}/dashboards	dashboard-controller	list_2	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	POST	/api/v1/workspaces/{workspaceId}/dashboards	dashboard-controller	create_2	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/domain-events/replay	domain-event-admin-controller	replay
 planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/email-deliveries	automation-controller	listEmailDeliveries
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/email-deliveries/process	automation-controller	processEmailDeliveries
 planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/email-provider-settings	automation-controller	getEmailProviderSettings
 planned-high-risk	PUT	/api/v1/workspaces/{workspaceId}/email-provider-settings	automation-controller	updateEmailProviderSettings
-covered	GET	/api/v1/workspaces/{workspaceId}/export-jobs	audit-controller	listExportJobs
+covered	GET	/api/v1/workspaces/{workspaceId}/export-jobs	audit-controller	listExportJobs	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
 planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/export-jobs/{exportJobId}	audit-controller	getExportJob
 planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/export-jobs/{exportJobId}/download	audit-controller	downloadExportJob
-covered	GET	/api/v1/workspaces/{workspaceId}/field-configurations	custom-field-controller	listFieldConfigurations
-covered	POST	/api/v1/workspaces/{workspaceId}/field-configurations	custom-field-controller	createFieldConfiguration
+covered	GET	/api/v1/workspaces/{workspaceId}/field-configurations	custom-field-controller	listFieldConfigurations	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	POST	/api/v1/workspaces/{workspaceId}/field-configurations	custom-field-controller	createFieldConfiguration	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 planned	GET	/api/v1/workspaces/{workspaceId}/import-conflict-resolution-jobs	import-job-controller	listWorkspaceConflictResolutionJobs
 planned	POST	/api/v1/workspaces/{workspaceId}/import-conflict-resolution-jobs/process	import-job-controller	processConflictResolutionJobs
 planned	GET	/api/v1/workspaces/{workspaceId}/import-jobs	import-job-controller	listImportJobs
@@ -323,35 +323,35 @@ planned	POST	/api/v1/workspaces/{workspaceId}/import-transform-presets	import-jo
 planned	POST	/api/v1/workspaces/{workspaceId}/invitations	auth-controller	invite
 planned	GET	/api/v1/workspaces/{workspaceId}/labels	work-item-controller	listWorkspaceLabels
 planned	POST	/api/v1/workspaces/{workspaceId}/labels	work-item-controller	createWorkspaceLabel
-planned	GET	/api/v1/workspaces/{workspaceId}/notification-defaults	notification-controller	listDefaultPreferences
-planned	POST	/api/v1/workspaces/{workspaceId}/notification-defaults	notification-controller	createDefaultPreference
-planned	GET	/api/v1/workspaces/{workspaceId}/notification-preferences	notification-controller	listPreferences
-planned	POST	/api/v1/workspaces/{workspaceId}/notification-preferences	notification-controller	upsertPreference
-planned	GET	/api/v1/workspaces/{workspaceId}/notifications	notification-controller	listNotifications
-planned	GET	/api/v1/workspaces/{workspaceId}/personalization/favorites	personalization-controller	listFavorites
-covered	POST	/api/v1/workspaces/{workspaceId}/personalization/favorites	personalization-controller	addFavorite
-planned	GET	/api/v1/workspaces/{workspaceId}/personalization/recent-items	personalization-controller	listRecentItems
-covered	POST	/api/v1/workspaces/{workspaceId}/personalization/recent-items	personalization-controller	recordRecentItem
-planned	GET	/api/v1/workspaces/{workspaceId}/personalization/views	personalization-controller	listViews
-covered	POST	/api/v1/workspaces/{workspaceId}/personalization/views	personalization-controller	createView
-planned	GET	/api/v1/workspaces/{workspaceId}/projects/{projectId}/activity	activity-controller	projectActivity
-covered	GET	/api/v1/workspaces/{workspaceId}/report-query-catalog	report-query-catalog-controller	list_1
-covered	POST	/api/v1/workspaces/{workspaceId}/report-query-catalog	report-query-catalog-controller	create_1
+covered	GET	/api/v1/workspaces/{workspaceId}/notification-defaults	notification-controller	listDefaultPreferences	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
+covered	POST	/api/v1/workspaces/{workspaceId}/notification-defaults	notification-controller	createDefaultPreference	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
+covered	GET	/api/v1/workspaces/{workspaceId}/notification-preferences	notification-controller	listPreferences	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
+covered	POST	/api/v1/workspaces/{workspaceId}/notification-preferences	notification-controller	upsertPreference	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
+covered	GET	/api/v1/workspaces/{workspaceId}/notifications	notification-controller	listNotifications	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
+covered	GET	/api/v1/workspaces/{workspaceId}/personalization/favorites	personalization-controller	listFavorites	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	POST	/api/v1/workspaces/{workspaceId}/personalization/favorites	personalization-controller	addFavorite	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	GET	/api/v1/workspaces/{workspaceId}/personalization/recent-items	personalization-controller	listRecentItems	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	POST	/api/v1/workspaces/{workspaceId}/personalization/recent-items	personalization-controller	recordRecentItem	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	GET	/api/v1/workspaces/{workspaceId}/personalization/views	personalization-controller	listViews	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	POST	/api/v1/workspaces/{workspaceId}/personalization/views	personalization-controller	createView	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	GET	/api/v1/workspaces/{workspaceId}/projects/{projectId}/activity	activity-controller	projectActivity	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	GET	/api/v1/workspaces/{workspaceId}/report-query-catalog	report-query-catalog-controller	list_1	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	POST	/api/v1/workspaces/{workspaceId}/report-query-catalog	report-query-catalog-controller	create_1	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 planned	GET	/api/v1/workspaces/{workspaceId}/repository-connections	repository-connection-controller	listRepositoryConnections
 planned	POST	/api/v1/workspaces/{workspaceId}/repository-connections	repository-connection-controller	createRepositoryConnection
-planned	GET	/api/v1/workspaces/{workspaceId}/roadmaps	release-roadmap-controller	listWorkspaceRoadmaps
-covered	POST	/api/v1/workspaces/{workspaceId}/roadmaps	release-roadmap-controller	createRoadmap
-planned	GET	/api/v1/workspaces/{workspaceId}/saved-filters	saved-filter-controller	list
-covered	POST	/api/v1/workspaces/{workspaceId}/saved-filters	saved-filter-controller	create
-covered	GET	/api/v1/workspaces/{workspaceId}/screens	custom-field-controller	listScreens
-covered	POST	/api/v1/workspaces/{workspaceId}/screens	custom-field-controller	createScreen
-covered	GET	/api/v1/workspaces/{workspaceId}/security-policy	workspace-security-policy-controller	getWorkspaceSecurityPolicy
-covered	PATCH	/api/v1/workspaces/{workspaceId}/security-policy	workspace-security-policy-controller	updateWorkspaceSecurityPolicy
-covered	GET	/api/v1/workspaces/{workspaceId}/service-tokens	auth-controller	listServiceTokens
-covered	POST	/api/v1/workspaces/{workspaceId}/service-tokens	auth-controller	createServiceToken
-covered	DELETE	/api/v1/workspaces/{workspaceId}/service-tokens/{tokenId}	auth-controller	revokeServiceToken
-covered	GET	/api/v1/workspaces/{workspaceId}/teams	team-controller	listTeams
-covered	POST	/api/v1/workspaces/{workspaceId}/teams	team-controller	createTeam
+covered	GET	/api/v1/workspaces/{workspaceId}/roadmaps	release-roadmap-controller	listWorkspaceRoadmaps	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/workspaces/{workspaceId}/roadmaps	release-roadmap-controller	createRoadmap	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/workspaces/{workspaceId}/saved-filters	saved-filter-controller	list	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	POST	/api/v1/workspaces/{workspaceId}/saved-filters	saved-filter-controller	create	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
+covered	GET	/api/v1/workspaces/{workspaceId}/screens	custom-field-controller	listScreens	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	POST	/api/v1/workspaces/{workspaceId}/screens	custom-field-controller	createScreen	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
+covered	GET	/api/v1/workspaces/{workspaceId}/security-policy	workspace-security-policy-controller	getWorkspaceSecurityPolicy	SecurityPolicyApiTest#authenticatedWorkspaceAndProjectPoliciesExposeEffectiveLimitsAndRejectInvalidUpdates
+covered	PATCH	/api/v1/workspaces/{workspaceId}/security-policy	workspace-security-policy-controller	updateWorkspaceSecurityPolicy	SecurityPolicyApiTest#authenticatedWorkspaceAndProjectPoliciesExposeEffectiveLimitsAndRejectInvalidUpdates
+covered	GET	/api/v1/workspaces/{workspaceId}/service-tokens	auth-controller	listServiceTokens	ApiTokenSecurityApiTest#serviceTokensHideRawValuesOnListHonorScopesAndStopWorkingAfterRevocation
+covered	POST	/api/v1/workspaces/{workspaceId}/service-tokens	auth-controller	createServiceToken	ApiTokenSecurityApiTest#serviceTokensHideRawValuesOnListHonorScopesAndStopWorkingAfterRevocation
+covered	DELETE	/api/v1/workspaces/{workspaceId}/service-tokens/{tokenId}	auth-controller	revokeServiceToken	ApiTokenSecurityApiTest#serviceTokensHideRawValuesOnListHonorScopesAndStopWorkingAfterRevocation
+covered	GET	/api/v1/workspaces/{workspaceId}/teams	team-controller	listTeams	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	POST	/api/v1/workspaces/{workspaceId}/teams	team-controller	createTeam	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
 planned	POST	/api/v1/workspaces/{workspaceId}/users	auth-controller	createUser
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/webhook-deliveries/process	automation-controller	processWebhookDeliveries
 planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/webhooks	automation-controller	listWebhooks

@@ -18,10 +18,10 @@ covered	POST	/api/v1/agent-tasks/{taskId}/worker-dispatch	agent-task-controller	
 covered	PATCH	/api/v1/agents/{profileId}	agent-profile-controller	updateProfile	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
 covered	GET	/api/v1/auth/csrf	auth-controller	csrf	CsrfApiTest#csrfEndpointReturnsBrowserTokenMetadata
 covered	POST	/api/v1/auth/login	auth-controller	login	AuthSessionApiTest#loginEstablishesCookieAndBearerSessionsWhenCredentialsAreProvided
-planned-high-risk	POST	/api/v1/auth/logout	auth-controller	logout
+covered	POST	/api/v1/auth/logout	auth-controller	logout	AuthSessionApiTest#logoutRegisterAndOauthRoutesRejectUnsafeInputs
 covered	GET	/api/v1/auth/me	auth-controller	me	AuthSessionApiTest#loginEstablishesCookieAndBearerSessionsWhenCredentialsAreProvided
-planned-high-risk	POST	/api/v1/auth/oauth/login	auth-controller	oauthLogin
-planned-high-risk	POST	/api/v1/auth/register	auth-controller	register
+covered	POST	/api/v1/auth/oauth/login	auth-controller	oauthLogin	AuthSessionApiTest#logoutRegisterAndOauthRoutesRejectUnsafeInputs
+covered	POST	/api/v1/auth/register	auth-controller	register	AuthSessionApiTest#logoutRegisterAndOauthRoutesRejectUnsafeInputs
 covered	GET	/api/v1/auth/tokens/personal	auth-controller	listPersonalTokens	ApiTokenSecurityApiTest#personalTokensHideRawValuesOnListEnforceScopesAndStopWorkingAfterRevocation
 covered	POST	/api/v1/auth/tokens/personal	auth-controller	createPersonalToken	ApiTokenSecurityApiTest#personalTokensHideRawValuesOnListEnforceScopesAndStopWorkingAfterRevocation
 covered	DELETE	/api/v1/auth/tokens/{tokenId}	auth-controller	revokePersonalToken	ApiTokenSecurityApiTest#personalTokensHideRawValuesOnListEnforceScopesAndStopWorkingAfterRevocation
@@ -74,54 +74,54 @@ covered	POST	/api/v1/email-deliveries/{deliveryId}/retry	automation-controller	r
 covered	DELETE	/api/v1/field-configurations/{fieldConfigurationId}	custom-field-controller	deleteFieldConfiguration	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	GET	/api/v1/field-configurations/{fieldConfigurationId}	custom-field-controller	getFieldConfiguration	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	PATCH	/api/v1/field-configurations/{fieldConfigurationId}	custom-field-controller	updateFieldConfiguration	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
-planned-high-risk	GET	/api/v1/import-conflict-resolution-jobs/{jobId}	import-job-controller	getConflictResolutionJob
-planned-high-risk	POST	/api/v1/import-conflict-resolution-jobs/{jobId}/cancel	import-job-controller	cancelConflictResolutionJob
-planned-high-risk	POST	/api/v1/import-conflict-resolution-jobs/{jobId}/retry	import-job-controller	retryConflictResolutionJob
-planned-high-risk	POST	/api/v1/import-conflict-resolution-jobs/{jobId}/run	import-job-controller	runConflictResolutionJob
-planned-high-risk	PATCH	/api/v1/import-job-records/{recordId}	import-job-controller	updateRecord
-planned-high-risk	POST	/api/v1/import-job-records/{recordId}/resolve-conflict	import-job-controller	resolveConflict
-planned-high-risk	GET	/api/v1/import-job-records/{recordId}/version-diffs	import-job-controller	listRecordVersionDiffs
-planned-high-risk	GET	/api/v1/import-job-records/{recordId}/versions	import-job-controller	listRecordVersions
-planned-high-risk	GET	/api/v1/import-jobs/{importJobId}	import-job-controller	getImportJob
-planned-high-risk	POST	/api/v1/import-jobs/{importJobId}/cancel	import-job-controller	cancelImportJob
-planned-high-risk	POST	/api/v1/import-jobs/{importJobId}/complete	import-job-controller	completeImportJob
-planned-high-risk	GET	/api/v1/import-jobs/{importJobId}/conflict-resolution-jobs	import-job-controller	listConflictResolutionJobs
-planned-high-risk	GET	/api/v1/import-jobs/{importJobId}/conflicts	import-job-controller	listConflicts
-planned-high-risk	POST	/api/v1/import-jobs/{importJobId}/conflicts/resolve	import-job-controller	resolveConflicts
-planned-high-risk	POST	/api/v1/import-jobs/{importJobId}/conflicts/resolve-async	import-job-controller	createConflictResolutionJob
-planned-high-risk	POST	/api/v1/import-jobs/{importJobId}/conflicts/resolve-preview	import-job-controller	previewResolveConflicts
-planned-high-risk	POST	/api/v1/import-jobs/{importJobId}/fail	import-job-controller	failImportJob
-planned-high-risk	GET	/api/v1/import-jobs/{importJobId}/materialization-runs	import-job-controller	listMaterializationRuns
-planned-high-risk	POST	/api/v1/import-jobs/{importJobId}/materialize	import-job-controller	materializeImportJob
-planned-high-risk	POST	/api/v1/import-jobs/{importJobId}/parse	import-job-controller	parseImportJob
-planned-high-risk	GET	/api/v1/import-jobs/{importJobId}/records	import-job-controller	listRecords
-planned-high-risk	POST	/api/v1/import-jobs/{importJobId}/records	import-job-controller	createRecord
-planned-high-risk	POST	/api/v1/import-jobs/{importJobId}/start	import-job-controller	startImportJob
-planned-high-risk	GET	/api/v1/import-jobs/{importJobId}/version-diffs	import-job-controller	listJobVersionDiffs
-planned-high-risk	GET	/api/v1/import-jobs/{importJobId}/version-diffs/export	import-job-controller	exportJobVersionDiffs
-planned-high-risk	POST	/api/v1/import-jobs/{importJobId}/version-diffs/export-jobs	import-job-controller	createJobVersionDiffExportJob
-planned-high-risk	DELETE	/api/v1/import-mapping-templates/{mappingTemplateId}	import-job-controller	deleteMappingTemplate
-planned-high-risk	PATCH	/api/v1/import-mapping-templates/{mappingTemplateId}	import-job-controller	updateMappingTemplate
-planned-high-risk	GET	/api/v1/import-mapping-templates/{mappingTemplateId}/status-translations	import-job-controller	listStatusTranslations
-planned-high-risk	POST	/api/v1/import-mapping-templates/{mappingTemplateId}/status-translations	import-job-controller	createStatusTranslation
-planned-high-risk	DELETE	/api/v1/import-mapping-templates/{mappingTemplateId}/status-translations/{translationId}	import-job-controller	deleteStatusTranslation
-planned-high-risk	PATCH	/api/v1/import-mapping-templates/{mappingTemplateId}/status-translations/{translationId}	import-job-controller	updateStatusTranslation
-planned-high-risk	GET	/api/v1/import-mapping-templates/{mappingTemplateId}/type-translations	import-job-controller	listTypeTranslations
-planned-high-risk	POST	/api/v1/import-mapping-templates/{mappingTemplateId}/type-translations	import-job-controller	createTypeTranslation
-planned-high-risk	DELETE	/api/v1/import-mapping-templates/{mappingTemplateId}/type-translations/{translationId}	import-job-controller	deleteTypeTranslation
-planned-high-risk	PATCH	/api/v1/import-mapping-templates/{mappingTemplateId}/type-translations/{translationId}	import-job-controller	updateTypeTranslation
-planned-high-risk	GET	/api/v1/import-mapping-templates/{mappingTemplateId}/value-lookups	import-job-controller	listValueLookups
-planned-high-risk	POST	/api/v1/import-mapping-templates/{mappingTemplateId}/value-lookups	import-job-controller	createValueLookup
-planned-high-risk	DELETE	/api/v1/import-mapping-templates/{mappingTemplateId}/value-lookups/{lookupId}	import-job-controller	deleteValueLookup
-planned-high-risk	PATCH	/api/v1/import-mapping-templates/{mappingTemplateId}/value-lookups/{lookupId}	import-job-controller	updateValueLookup
-planned-high-risk	POST	/api/v1/import-materialization-runs/{materializationRunId}/rerun	import-job-controller	rerunMaterialization
-planned-high-risk	DELETE	/api/v1/import-transform-presets/{presetId}	import-job-controller	deleteTransformPreset
-planned-high-risk	GET	/api/v1/import-transform-presets/{presetId}	import-job-controller	getTransformPreset
-planned-high-risk	PATCH	/api/v1/import-transform-presets/{presetId}	import-job-controller	updateTransformPreset
-planned-high-risk	GET	/api/v1/import-transform-presets/{presetId}/versions	import-job-controller	listTransformPresetVersions
-planned-high-risk	POST	/api/v1/import-transform-presets/{presetId}/versions/{versionId}/clone	import-job-controller	cloneTransformPresetVersion
-planned-high-risk	POST	/api/v1/import-transform-presets/{presetId}/versions/{versionId}/retarget	import-job-controller	cloneAndRetargetTransformPresetVersion
-planned-high-risk	POST	/api/v1/import-transform-presets/{presetId}/versions/{versionId}/retarget-preview	import-job-controller	previewCloneAndRetargetTransformPresetVersion
+covered	GET	/api/v1/import-conflict-resolution-jobs/{jobId}	import-job-controller	getConflictResolutionJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-conflict-resolution-jobs/{jobId}/cancel	import-job-controller	cancelConflictResolutionJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-conflict-resolution-jobs/{jobId}/retry	import-job-controller	retryConflictResolutionJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-conflict-resolution-jobs/{jobId}/run	import-job-controller	runConflictResolutionJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	PATCH	/api/v1/import-job-records/{recordId}	import-job-controller	updateRecord	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-job-records/{recordId}/resolve-conflict	import-job-controller	resolveConflict	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/import-job-records/{recordId}/version-diffs	import-job-controller	listRecordVersionDiffs	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/import-job-records/{recordId}/versions	import-job-controller	listRecordVersions	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/import-jobs/{importJobId}	import-job-controller	getImportJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-jobs/{importJobId}/cancel	import-job-controller	cancelImportJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-jobs/{importJobId}/complete	import-job-controller	completeImportJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/import-jobs/{importJobId}/conflict-resolution-jobs	import-job-controller	listConflictResolutionJobs	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/import-jobs/{importJobId}/conflicts	import-job-controller	listConflicts	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-jobs/{importJobId}/conflicts/resolve	import-job-controller	resolveConflicts	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-jobs/{importJobId}/conflicts/resolve-async	import-job-controller	createConflictResolutionJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-jobs/{importJobId}/conflicts/resolve-preview	import-job-controller	previewResolveConflicts	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-jobs/{importJobId}/fail	import-job-controller	failImportJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/import-jobs/{importJobId}/materialization-runs	import-job-controller	listMaterializationRuns	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-jobs/{importJobId}/materialize	import-job-controller	materializeImportJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-jobs/{importJobId}/parse	import-job-controller	parseImportJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/import-jobs/{importJobId}/records	import-job-controller	listRecords	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-jobs/{importJobId}/records	import-job-controller	createRecord	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-jobs/{importJobId}/start	import-job-controller	startImportJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/import-jobs/{importJobId}/version-diffs	import-job-controller	listJobVersionDiffs	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/import-jobs/{importJobId}/version-diffs/export	import-job-controller	exportJobVersionDiffs	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-jobs/{importJobId}/version-diffs/export-jobs	import-job-controller	createJobVersionDiffExportJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	DELETE	/api/v1/import-mapping-templates/{mappingTemplateId}	import-job-controller	deleteMappingTemplate	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	PATCH	/api/v1/import-mapping-templates/{mappingTemplateId}	import-job-controller	updateMappingTemplate	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/import-mapping-templates/{mappingTemplateId}/status-translations	import-job-controller	listStatusTranslations	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-mapping-templates/{mappingTemplateId}/status-translations	import-job-controller	createStatusTranslation	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	DELETE	/api/v1/import-mapping-templates/{mappingTemplateId}/status-translations/{translationId}	import-job-controller	deleteStatusTranslation	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	PATCH	/api/v1/import-mapping-templates/{mappingTemplateId}/status-translations/{translationId}	import-job-controller	updateStatusTranslation	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/import-mapping-templates/{mappingTemplateId}/type-translations	import-job-controller	listTypeTranslations	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-mapping-templates/{mappingTemplateId}/type-translations	import-job-controller	createTypeTranslation	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	DELETE	/api/v1/import-mapping-templates/{mappingTemplateId}/type-translations/{translationId}	import-job-controller	deleteTypeTranslation	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	PATCH	/api/v1/import-mapping-templates/{mappingTemplateId}/type-translations/{translationId}	import-job-controller	updateTypeTranslation	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/import-mapping-templates/{mappingTemplateId}/value-lookups	import-job-controller	listValueLookups	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-mapping-templates/{mappingTemplateId}/value-lookups	import-job-controller	createValueLookup	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	DELETE	/api/v1/import-mapping-templates/{mappingTemplateId}/value-lookups/{lookupId}	import-job-controller	deleteValueLookup	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	PATCH	/api/v1/import-mapping-templates/{mappingTemplateId}/value-lookups/{lookupId}	import-job-controller	updateValueLookup	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-materialization-runs/{materializationRunId}/rerun	import-job-controller	rerunMaterialization	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	DELETE	/api/v1/import-transform-presets/{presetId}	import-job-controller	deleteTransformPreset	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/import-transform-presets/{presetId}	import-job-controller	getTransformPreset	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	PATCH	/api/v1/import-transform-presets/{presetId}	import-job-controller	updateTransformPreset	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/import-transform-presets/{presetId}/versions	import-job-controller	listTransformPresetVersions	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-transform-presets/{presetId}/versions/{versionId}/clone	import-job-controller	cloneTransformPresetVersion	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-transform-presets/{presetId}/versions/{versionId}/retarget	import-job-controller	cloneAndRetargetTransformPresetVersion	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/import-transform-presets/{presetId}/versions/{versionId}/retarget-preview	import-job-controller	previewCloneAndRetargetTransformPresetVersion	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
 covered	DELETE	/api/v1/iterations/{iterationId}	planning-controller	cancelIteration	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
 covered	GET	/api/v1/iterations/{iterationId}	planning-controller	getIteration	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
 covered	PATCH	/api/v1/iterations/{iterationId}	planning-controller	updateIteration	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
@@ -192,7 +192,7 @@ covered	PATCH	/api/v1/report-query-catalog/{queryId}	report-query-catalog-contro
 covered	GET	/api/v1/reports/iterations/{iterationId}/report	reporting-controller	iterationReport	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
 covered	GET	/api/v1/reports/programs/{programId}/dashboard-summary	reporting-controller	programDashboardSummary	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
 covered	GET	/api/v1/reports/projects/{projectId}/dashboard-summary	reporting-controller	projectDashboardSummary	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
-planned-high-risk	GET	/api/v1/reports/projects/{projectId}/imports/completions	reporting-controller	projectImportCompletions
+covered	GET	/api/v1/reports/projects/{projectId}/imports/completions	reporting-controller	projectImportCompletions	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
 covered	GET	/api/v1/reports/projects/{projectId}/snapshots	reporting-controller	projectSnapshots	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
 covered	GET	/api/v1/reports/work-items/{workItemId}/assignment-history	reporting-controller	assignmentHistory	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
 covered	GET	/api/v1/reports/work-items/{workItemId}/estimate-history	reporting-controller	estimateHistory	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
@@ -200,7 +200,7 @@ covered	GET	/api/v1/reports/work-items/{workItemId}/status-history	reporting-con
 covered	GET	/api/v1/reports/work-items/{workItemId}/team-history	reporting-controller	teamHistory	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
 covered	GET	/api/v1/reports/work-items/{workItemId}/work-log-summary	reporting-controller	workLogSummary	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
 covered	GET	/api/v1/reports/workspaces/{workspaceId}/dashboard-summary	reporting-controller	workspaceDashboardSummary	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
-planned-high-risk	GET	/api/v1/reports/workspaces/{workspaceId}/imports/completions	reporting-controller	workspaceImportCompletions
+covered	GET	/api/v1/reports/workspaces/{workspaceId}/imports/completions	reporting-controller	workspaceImportCompletions	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
 covered	GET	/api/v1/reports/workspaces/{workspaceId}/snapshot-retention-policy	reporting-controller	getSnapshotRetentionPolicy	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	PUT	/api/v1/reports/workspaces/{workspaceId}/snapshot-retention-policy	reporting-controller	updateSnapshotRetentionPolicy	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	POST	/api/v1/reports/workspaces/{workspaceId}/snapshots/backfill	reporting-controller	backfillWorkspaceSnapshots	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
@@ -327,20 +327,20 @@ covered	GET	/api/v1/workspaces/{workspaceId}/export-jobs/{exportJobId}	audit-con
 covered	GET	/api/v1/workspaces/{workspaceId}/export-jobs/{exportJobId}/download	audit-controller	downloadExportJob	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
 covered	GET	/api/v1/workspaces/{workspaceId}/field-configurations	custom-field-controller	listFieldConfigurations	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	POST	/api/v1/workspaces/{workspaceId}/field-configurations	custom-field-controller	createFieldConfiguration	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/import-conflict-resolution-jobs	import-job-controller	listWorkspaceConflictResolutionJobs
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/import-conflict-resolution-jobs/process	import-job-controller	processConflictResolutionJobs
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/import-jobs	import-job-controller	listImportJobs
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/import-jobs	import-job-controller	createImportJob
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/import-mapping-templates	import-job-controller	listMappingTemplates
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/import-mapping-templates	import-job-controller	createMappingTemplate
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/import-review/export-jobs	import-job-controller	createImportReviewCsvExportJob
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/import-review/export-jobs/process	import-job-controller	processImportReviewCsvExportJobs
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/import-samples	import-job-controller	listImportSamples
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/import-samples/{sampleKey}/jobs	import-job-controller	createSampleImportJob
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/import-settings	import-job-controller	getImportSettings
-planned-high-risk	PATCH	/api/v1/workspaces/{workspaceId}/import-settings	import-job-controller	updateImportSettings
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/import-transform-presets	import-job-controller	listTransformPresets
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/import-transform-presets	import-job-controller	createTransformPreset
+covered	GET	/api/v1/workspaces/{workspaceId}/import-conflict-resolution-jobs	import-job-controller	listWorkspaceConflictResolutionJobs	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/workspaces/{workspaceId}/import-conflict-resolution-jobs/process	import-job-controller	processConflictResolutionJobs	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/workspaces/{workspaceId}/import-jobs	import-job-controller	listImportJobs	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/workspaces/{workspaceId}/import-jobs	import-job-controller	createImportJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/workspaces/{workspaceId}/import-mapping-templates	import-job-controller	listMappingTemplates	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/workspaces/{workspaceId}/import-mapping-templates	import-job-controller	createMappingTemplate	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/workspaces/{workspaceId}/import-review/export-jobs	import-job-controller	createImportReviewCsvExportJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/workspaces/{workspaceId}/import-review/export-jobs/process	import-job-controller	processImportReviewCsvExportJobs	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/workspaces/{workspaceId}/import-samples	import-job-controller	listImportSamples	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/workspaces/{workspaceId}/import-samples/{sampleKey}/jobs	import-job-controller	createSampleImportJob	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/workspaces/{workspaceId}/import-settings	import-job-controller	getImportSettings	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	PATCH	/api/v1/workspaces/{workspaceId}/import-settings	import-job-controller	updateImportSettings	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	GET	/api/v1/workspaces/{workspaceId}/import-transform-presets	import-job-controller	listTransformPresets	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
+covered	POST	/api/v1/workspaces/{workspaceId}/import-transform-presets	import-job-controller	createTransformPreset	ImportHighRiskApiTest#authenticatedAdminsCanExerciseImportLifecycleReviewExportsAndReports
 covered	GET	/api/v1/workspaces/{workspaceId}/invitations	auth-controller	listInvitations	WorkspaceAdminApiTest#authenticatedAdminsCanManageRepositoryConnectionsInvitationsAndWorkspaceUsers
 covered	POST	/api/v1/workspaces/{workspaceId}/invitations	auth-controller	invite	WorkspaceAdminApiTest#authenticatedAdminsCanManageRepositoryConnectionsInvitationsAndWorkspaceUsers
 covered	DELETE	/api/v1/workspaces/{workspaceId}/invitations/{invitationId}	auth-controller	cancelInvitation	WorkspaceAdminApiTest#authenticatedAdminsCanManageRepositoryConnectionsInvitationsAndWorkspaceUsers

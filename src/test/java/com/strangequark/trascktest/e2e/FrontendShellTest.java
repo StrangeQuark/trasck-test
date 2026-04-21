@@ -375,6 +375,469 @@ class FrontendShellTest {
         }
     }
 
+    @Test
+    void authTokenAndSystemAdminScreensDriveSecurityControlsThroughBrowserUi() {
+        RuntimeChecks.requireHttpService("Trasck frontend", config.frontendBaseUrl(), "/", config.timeout());
+
+        String workspaceId = "00000000-0000-0000-0000-000000000101";
+        String adminUserId = "00000000-0000-0000-0000-000000000001";
+        String grantedUserId = "00000000-0000-0000-0000-000000000a11";
+        AtomicBoolean loggedIn = new AtomicBoolean(false);
+        AtomicBoolean loggedOut = new AtomicBoolean(false);
+        AtomicBoolean personalTokenCreated = new AtomicBoolean(false);
+        AtomicBoolean serviceTokenCreated = new AtomicBoolean(false);
+        AtomicBoolean systemAdminGranted = new AtomicBoolean(false);
+        AtomicBoolean systemAdminRevoked = new AtomicBoolean(false);
+
+        try (Playwright playwright = Playwright.create();
+                Browser browser = BrowserFactory.launch(playwright, config);
+                BrowserSession session = BrowserSession.start(browser, config, "auth-token-system-ui")) {
+            Page page = session.page();
+            page.addInitScript("localStorage.setItem('trasck.workspaceId', '" + workspaceId + "');"
+                    + "localStorage.setItem('trasck.apiBaseUrl', '" + config.frontendBaseUrl() + "');");
+            mockCurrentUser(page);
+            mockCsrf(page);
+            mockAuthPage(page, adminUserId, loggedIn, loggedOut);
+            mockTokenAdminPage(page, workspaceId, personalTokenCreated, serviceTokenCreated);
+            mockSystemAdminPage(page, adminUserId, grantedUserId, systemAdminGranted, systemAdminRevoked);
+
+            page.navigate("/auth");
+            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Sign In"))).isVisible();
+            page.getByLabel("Identifier").fill("admin@example.test");
+            page.getByLabel("Password").fill("correct-horse-battery-staple");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Login")).click();
+            assertTrue(loggedIn.get(), "Login button should call the auth login endpoint");
+            assertThat(page.getByText("Browser Admin").first()).isVisible();
+            page.locator("button[title='Logout']").click();
+            assertTrue(loggedOut.get(), "Logout icon should call the auth logout endpoint");
+
+            page.navigate("/tokens");
+            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Personal Token"))).isVisible();
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load")).click();
+            assertThat(page.getByText("Browser Personal Token").first()).isVisible();
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create token")).click();
+            assertTrue(personalTokenCreated.get(), "Create token should call the personal token endpoint");
+            page.getByLabel("Role ID").fill("00000000-0000-0000-0000-000000000401");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create service token")).click();
+            assertTrue(serviceTokenCreated.get(), "Create service token should call the service token endpoint");
+            assertThat(page.getByText("pt_browser_created").first()).isVisible();
+
+            page.navigate("/system");
+            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("System Admins"))).isVisible();
+            page.getByLabel("User ID").fill(grantedUserId);
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Grant")).click();
+            assertTrue(systemAdminGranted.get(), "Grant should call the system-admin endpoint");
+            assertThat(page.getByText("Granted Browser Admin").first()).isVisible();
+            page.locator("button[title='Revoke system admin']").last().click();
+            assertTrue(systemAdminRevoked.get(), "Revoke should call the system-admin revoke endpoint");
+
+            session.screenshot();
+            session.assertNoConsoleErrors();
+        }
+    }
+
+    @Test
+    void importsPageDrivesReviewExportAndWorkerControlsThroughBrowserUi() {
+        RuntimeChecks.requireHttpService("Trasck frontend", config.frontendBaseUrl(), "/", config.timeout());
+
+        String workspaceId = "00000000-0000-0000-0000-000000000101";
+        String projectId = "00000000-0000-0000-0000-000000000501";
+        String importJobId = "00000000-0000-0000-0000-000000000d01";
+        String templateId = "00000000-0000-0000-0000-000000000d02";
+        String presetId = "00000000-0000-0000-0000-000000000d03";
+        String recordId = "00000000-0000-0000-0000-000000000d04";
+        String conflictJobId = "00000000-0000-0000-0000-000000000d05";
+        String exportJobId = "00000000-0000-0000-0000-000000000d06";
+        AtomicBoolean settingSaved = new AtomicBoolean(false);
+        AtomicBoolean sampleCreated = new AtomicBoolean(false);
+        AtomicBoolean jobCreated = new AtomicBoolean(false);
+        AtomicBoolean parsed = new AtomicBoolean(false);
+        AtomicBoolean presetCreated = new AtomicBoolean(false);
+        AtomicBoolean templateCreated = new AtomicBoolean(false);
+        AtomicBoolean materialized = new AtomicBoolean(false);
+        AtomicBoolean conflictWorkerProcessed = new AtomicBoolean(false);
+        AtomicBoolean reviewExportQueued = new AtomicBoolean(false);
+        AtomicBoolean reviewExportsProcessed = new AtomicBoolean(false);
+        AtomicBoolean versionExportCreated = new AtomicBoolean(false);
+
+        try (Playwright playwright = Playwright.create();
+                Browser browser = BrowserFactory.launch(playwright, config);
+                BrowserSession session = BrowserSession.start(browser, config, "imports-ui")) {
+            Page page = session.page();
+            page.addInitScript("localStorage.setItem('trasck.workspaceId', '" + workspaceId + "');"
+                    + "localStorage.setItem('trasck.projectId', '" + projectId + "');"
+                    + "localStorage.setItem('trasck.apiBaseUrl', '" + config.frontendBaseUrl() + "');");
+            mockCurrentUser(page);
+            mockCsrf(page);
+            mockImportsPage(
+                    page,
+                    workspaceId,
+                    projectId,
+                    importJobId,
+                    templateId,
+                    presetId,
+                    recordId,
+                    conflictJobId,
+                    exportJobId,
+                    settingSaved,
+                    sampleCreated,
+                    jobCreated,
+                    parsed,
+                    presetCreated,
+                    templateCreated,
+                    materialized,
+                    conflictWorkerProcessed,
+                    reviewExportQueued,
+                    reviewExportsProcessed,
+                    versionExportCreated
+            );
+
+            page.navigate("/imports");
+            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Import Job"))).isVisible();
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load").setExact(true)).click();
+            assertThat(page.getByText("Browser imported story").first()).isVisible();
+
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Save setting")).click();
+            assertTrue(settingSaved.get(), "Save setting should call import settings");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create sample job")).click();
+            assertTrue(sampleCreated.get(), "Create sample job should call sample endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create preset")).click();
+            assertTrue(presetCreated.get(), "Create preset should call transform preset endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create template")).click();
+            assertTrue(templateCreated.get(), "Create template should call mapping template endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create job")).click();
+            assertTrue(jobCreated.get(), "Create job should call import job endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Parse")).click();
+            assertTrue(parsed.get(), "Parse should call import parse endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Materialize")).click();
+            assertTrue(materialized.get(), "Materialize should call import materialization endpoint");
+
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Process queued")).click();
+            assertTrue(conflictWorkerProcessed.get(), "Process queued should call conflict worker endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create export artifact")).click();
+            assertTrue(versionExportCreated.get(), "Create export artifact should call job diff export endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("CSV")).first().click();
+            assertTrue(reviewExportQueued.get(), "CSV export should queue an import review export");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Process review exports")).click();
+            assertTrue(reviewExportsProcessed.get(), "Process review exports should call review export worker endpoint");
+            assertThat(page.getByText("Browser conflict job").first()).isVisible();
+
+            session.screenshot();
+            session.assertNoConsoleErrors();
+        }
+    }
+
+    private static void mockAuthPage(Page page, String userId, AtomicBoolean loggedIn, AtomicBoolean loggedOut) {
+        page.route("**/api/v1/auth/login", route -> {
+            loggedIn.set(true);
+            fulfillJson(route, 200, """
+                    {
+                      "user": {
+                        "id": "%s",
+                        "email": "admin@example.test",
+                        "username": "admin",
+                        "displayName": "Browser Admin",
+                        "accountType": "human",
+                        "emailVerified": true
+                      },
+                      "tokenType": "Bearer",
+                      "accessToken": "browser-access-token",
+                      "expiresAt": "2026-04-21T23:00:00Z"
+                    }
+                    """.formatted(userId));
+        });
+        page.route("**/api/v1/auth/logout", route -> {
+            loggedOut.set(true);
+            route.fulfill(new Route.FulfillOptions().setStatus(204));
+        });
+    }
+
+    private static void mockTokenAdminPage(
+            Page page,
+            String workspaceId,
+            AtomicBoolean personalTokenCreated,
+            AtomicBoolean serviceTokenCreated
+    ) {
+        page.route("**/api/v1/auth/tokens/personal", route -> {
+            if ("POST".equals(route.request().method())) {
+                personalTokenCreated.set(true);
+                fulfillJson(route, 201, apiTokenJson(
+                        "00000000-0000-0000-0000-000000000a21",
+                        null,
+                        "personal",
+                        "Browser Created Personal Token",
+                        "pt_browser_created",
+                        "pt_browser_created_secret"
+                ));
+                return;
+            }
+            fulfillJson(route, 200, "[" + apiTokenJson(
+                    "00000000-0000-0000-0000-000000000a20",
+                    null,
+                    "personal",
+                    "Browser Personal Token",
+                    "pt_browser",
+                    null
+            ) + "]");
+        });
+        page.route("**/api/v1/workspaces/" + workspaceId + "/service-tokens", route -> {
+            if ("POST".equals(route.request().method())) {
+                serviceTokenCreated.set(true);
+                fulfillJson(route, 201, apiTokenJson(
+                        "00000000-0000-0000-0000-000000000a23",
+                        workspaceId,
+                        "service",
+                        "Browser Created Service Token",
+                        "st_browser_created",
+                        "st_browser_created_secret"
+                ));
+                return;
+            }
+            fulfillJson(route, 200, "[" + apiTokenJson(
+                    "00000000-0000-0000-0000-000000000a22",
+                    workspaceId,
+                    "service",
+                    "Browser Service Token",
+                    "st_browser",
+                    null
+            ) + "]");
+        });
+    }
+
+    private static void mockSystemAdminPage(
+            Page page,
+            String adminUserId,
+            String grantedUserId,
+            AtomicBoolean systemAdminGranted,
+            AtomicBoolean systemAdminRevoked
+    ) {
+        page.route("**/api/v1/system-admins", route -> {
+            if ("POST".equals(route.request().method())) {
+                systemAdminGranted.set(true);
+                fulfillJson(route, 201, systemAdminJson(
+                        "00000000-0000-0000-0000-000000000a32",
+                        grantedUserId,
+                        "granted-browser-admin@example.test",
+                        "Granted Browser Admin",
+                        true
+                ));
+                return;
+            }
+            fulfillJson(route, 200, systemAdminGranted.get()
+                    ? "[" + systemAdminJson("00000000-0000-0000-0000-000000000a31", adminUserId, "admin@example.test", "Browser Admin", true)
+                    + "," + systemAdminJson("00000000-0000-0000-0000-000000000a32", grantedUserId, "granted-browser-admin@example.test", "Granted Browser Admin", !systemAdminRevoked.get()) + "]"
+                    : "[" + systemAdminJson("00000000-0000-0000-0000-000000000a31", adminUserId, "admin@example.test", "Browser Admin", true) + "]");
+        });
+        page.route("**/api/v1/system-admins/" + grantedUserId, route -> {
+            if ("DELETE".equals(route.request().method())) {
+                systemAdminRevoked.set(true);
+                route.fulfill(new Route.FulfillOptions().setStatus(204));
+                return;
+            }
+            route.fulfill(new Route.FulfillOptions().setStatus(405));
+        });
+    }
+
+    private static void mockImportsPage(
+            Page page,
+            String workspaceId,
+            String projectId,
+            String importJobId,
+            String templateId,
+            String presetId,
+            String recordId,
+            String conflictJobId,
+            String exportJobId,
+            AtomicBoolean settingSaved,
+            AtomicBoolean sampleCreated,
+            AtomicBoolean jobCreated,
+            AtomicBoolean parsed,
+            AtomicBoolean presetCreated,
+            AtomicBoolean templateCreated,
+            AtomicBoolean materialized,
+            AtomicBoolean conflictWorkerProcessed,
+            AtomicBoolean reviewExportQueued,
+            AtomicBoolean reviewExportsProcessed,
+            AtomicBoolean versionExportCreated
+    ) {
+        String runId = "00000000-0000-0000-0000-000000000d07";
+        String versionId = "00000000-0000-0000-0000-000000000d08";
+        page.route("**/api/v1/workspaces/" + workspaceId + "/import-settings", route -> {
+            if ("PATCH".equals(route.request().method())) {
+                settingSaved.set(true);
+            }
+            fulfillJson(route, 200, importSettingsJson(workspaceId));
+        });
+        page.route("**/api/v1/workspaces/" + workspaceId + "/import-samples", route -> fulfillJson(route, 200, """
+                [{
+                  "key": "csv",
+                  "label": "CSV sample",
+                  "provider": "csv",
+                  "sourceType": "row",
+                  "description": "Browser CSV sample"
+                }]
+                """));
+        page.route("**/api/v1/workspaces/" + workspaceId + "/import-samples/csv/jobs", route -> {
+            sampleCreated.set(true);
+            fulfillJson(route, 201, """
+                    {
+                      "sample": {"key": "csv", "label": "CSV sample", "provider": "csv", "sourceType": "row"},
+                      "importJob": %s,
+                      "parse": {"importJobId": "%s", "provider": "csv", "recordsParsed": 1, "records": [%s]},
+                      "transformPreset": %s,
+                      "mappingTemplate": %s
+                    }
+                    """.formatted(
+                    importJobJson(importJobId, workspaceId, "parsed"),
+                    importJobId,
+                    importRecordJson(recordId, importJobId, "row", "CSV-1", "pending", null),
+                    transformPresetJson(presetId, workspaceId),
+                    mappingTemplateJson(templateId, workspaceId, projectId, presetId)
+            ));
+        });
+        page.route("**/api/v1/workspaces/" + workspaceId + "/import-jobs", route -> {
+            if ("POST".equals(route.request().method())) {
+                jobCreated.set(true);
+                fulfillJson(route, 201, importJobJson(importJobId, workspaceId, "queued"));
+                return;
+            }
+            fulfillJson(route, 200, "[" + importJobJson(importJobId, workspaceId, materialized.get() ? "running" : "queued") + "]");
+        });
+        page.route("**/api/v1/workspaces/" + workspaceId + "/import-transform-presets", route -> {
+            if ("POST".equals(route.request().method())) {
+                presetCreated.set(true);
+                fulfillJson(route, 201, transformPresetJson(presetId, workspaceId));
+                return;
+            }
+            fulfillJson(route, 200, "[" + transformPresetJson(presetId, workspaceId) + "]");
+        });
+        page.route("**/api/v1/workspaces/" + workspaceId + "/import-mapping-templates", route -> {
+            if ("POST".equals(route.request().method())) {
+                templateCreated.set(true);
+                fulfillJson(route, 201, mappingTemplateJson(templateId, workspaceId, projectId, presetId));
+                return;
+            }
+            fulfillJson(route, 200, "[" + mappingTemplateJson(templateId, workspaceId, projectId, presetId) + "]");
+        });
+        page.route("**/api/v1/import-transform-presets/" + presetId + "/versions", route -> fulfillJson(route, 200, """
+                [{
+                  "id": "%s",
+                  "presetId": "%s",
+                  "workspaceId": "%s",
+                  "version": 1,
+                  "name": "Browser Import Preset",
+                  "description": "Browser import preset",
+                  "transformationConfig": {"title": ["trim"]},
+                  "enabled": true,
+                  "changeType": "created",
+                  "createdAt": "2026-04-21T20:00:00Z"
+                }]
+                """.formatted(versionId, presetId, workspaceId)));
+        page.route("**/api/v1/import-jobs/" + importJobId + "/parse", route -> {
+            parsed.set(true);
+            fulfillJson(route, 200, """
+                    {
+                      "importJobId": "%s",
+                      "provider": "csv",
+                      "recordsParsed": 1,
+                      "records": [%s]
+                    }
+                    """.formatted(importJobId, importRecordJson(recordId, importJobId, "row", "CSV-1", "pending", null)));
+        });
+        page.route("**/api/v1/import-jobs/" + importJobId + "/materialize", route -> {
+            materialized.set(true);
+            fulfillJson(route, 200, """
+                    {
+                      "materializationRunId": "%s",
+                      "importJobId": "%s",
+                      "mappingTemplateId": "%s",
+                      "projectId": "%s",
+                      "recordsProcessed": 1,
+                      "created": 1,
+                      "updated": 0,
+                      "failed": 0,
+                      "skipped": 0,
+                      "conflicts": 0,
+                      "records": [%s]
+                    }
+                    """.formatted(runId, importJobId, templateId, projectId, importRecordJson(recordId, importJobId, "row", "CSV-1", "imported", null)));
+        });
+        page.route("**/api/v1/import-jobs/" + importJobId + "/records**", route -> fulfillJson(route, 200,
+                "[" + importRecordJson(recordId, importJobId, "row", "CSV-1", materialized.get() ? "imported" : "pending", null) + "]"));
+        page.route("**/api/v1/import-jobs/" + importJobId + "/conflicts", route -> fulfillJson(route, 200,
+                "[" + importRecordJson(recordId, importJobId, "row", "CSV-1", "conflict", "open") + "]"));
+        page.route("**/api/v1/import-jobs/" + importJobId + "/conflict-resolution-jobs", route -> fulfillJson(route, 200,
+                "[" + conflictResolutionJobJson(conflictJobId, workspaceId, importJobId, conflictWorkerProcessed.get() ? "completed" : "queued") + "]"));
+        page.route("**/api/v1/workspaces/" + workspaceId + "/import-conflict-resolution-jobs**", route -> {
+            if ("POST".equals(route.request().method()) && route.request().url().contains("/process")) {
+                conflictWorkerProcessed.set(true);
+                fulfillJson(route, 200, """
+                        {
+                          "workspaceId": "%s",
+                          "processed": 1,
+                          "completed": 1,
+                          "failed": 0,
+                          "jobs": [%s]
+                        }
+                        """.formatted(workspaceId, conflictResolutionJobJson(conflictJobId, workspaceId, importJobId, "completed")));
+                return;
+            }
+            fulfillJson(route, 200, "[" + conflictResolutionJobJson(conflictJobId, workspaceId, importJobId, conflictWorkerProcessed.get() ? "completed" : "queued") + "]");
+        });
+        page.route("**/api/v1/import-jobs/" + importJobId + "/version-diffs", route -> fulfillJson(route, 200, importJobDiffJson(importJobId, workspaceId)));
+        page.route("**/api/v1/import-jobs/" + importJobId + "/version-diffs/export-jobs", route -> {
+            versionExportCreated.set(true);
+            fulfillJson(route, 201, exportJobJson(exportJobId, workspaceId, "import_job_version_diffs", "completed"));
+        });
+        page.route("**/api/v1/import-job-records/" + recordId + "/versions", route -> fulfillJson(route, 200, "[]"));
+        page.route("**/api/v1/import-job-records/" + recordId + "/version-diffs", route -> fulfillJson(route, 200, "[]"));
+        page.route("**/api/v1/import-jobs/" + importJobId + "/materialization-runs", route -> fulfillJson(route, 200, """
+                [{
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "importJobId": "%s",
+                  "mappingTemplateId": "%s",
+                  "projectId": "%s",
+                  "recordsProcessed": 1,
+                  "recordsCreated": 1,
+                  "recordsUpdated": 0,
+                  "recordsFailed": 0,
+                  "recordsSkipped": 0,
+                  "recordsConflicted": 0,
+                  "updateExisting": false,
+                  "createdAt": "2026-04-21T20:00:00Z"
+                }]
+                """.formatted(runId, workspaceId, importJobId, templateId, projectId)));
+        page.route("**/api/v1/workspaces/" + workspaceId + "/export-jobs**", route -> fulfillJson(route, 200, """
+                {
+                  "items": [%s],
+                  "nextCursor": null,
+                  "hasMore": false,
+                  "limit": 20
+                }
+                """.formatted(exportJobJson(exportJobId, workspaceId, "import_job_version_diffs", "completed"))));
+        page.route("**/api/v1/workspaces/" + workspaceId + "/import-review/export-jobs", route -> {
+            reviewExportQueued.set(true);
+            fulfillJson(route, 201, exportJobJson(exportJobId, workspaceId, "import_conflict_resolution_jobs", "queued"));
+        });
+        page.route("**/api/v1/workspaces/" + workspaceId + "/import-review/export-jobs/process", route -> {
+            reviewExportsProcessed.set(true);
+            fulfillJson(route, 200, """
+                    {
+                      "workspaceId": "%s",
+                      "requestedLimit": 10,
+                      "processed": 1,
+                      "completed": 1,
+                      "failed": 0,
+                      "jobs": [%s]
+                    }
+                    """.formatted(workspaceId, exportJobJson(exportJobId, workspaceId, "import_conflict_resolution_jobs", "completed")));
+        });
+        page.route("**/api/v1/reports/projects/" + projectId + "/imports/completions**", route -> fulfillJson(route, 200, importCompletionJson()));
+        page.route("**/api/v1/reports/workspaces/" + workspaceId + "/imports/completions**", route -> fulfillJson(route, 200, importCompletionJson()));
+        page.route("**/api/v1/import-jobs/" + importJobId, route -> fulfillJson(route, 200, importJobJson(importJobId, workspaceId, materialized.get() ? "running" : "queued")));
+    }
+
     private static void mockAutomationPage(
             Page page,
             String workspaceId,
@@ -1180,6 +1643,209 @@ class FrontendShellTest {
             }
             route.fulfill(new Route.FulfillOptions().setStatus(405));
         });
+    }
+
+    private static String apiTokenJson(String tokenId, String workspaceId, String tokenType, String name, String prefix, String rawToken) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": %s,
+                  "userId": "00000000-0000-0000-0000-000000000001",
+                  "tokenType": "%s",
+                  "name": "%s",
+                  "tokenPrefix": "%s",
+                  "token": %s,
+                  "roleId": "00000000-0000-0000-0000-000000000401",
+                  "scopes": ["work_item.read", "report.read"],
+                  "createdAt": "2026-04-21T20:00:00Z"
+                }
+                """.formatted(
+                tokenId,
+                workspaceId == null ? "null" : "\"" + workspaceId + "\"",
+                tokenType,
+                name,
+                prefix,
+                rawToken == null ? "null" : "\"" + rawToken + "\""
+        );
+    }
+
+    private static String systemAdminJson(String adminId, String userId, String email, String displayName, boolean active) {
+        return """
+                {
+                  "id": "%s",
+                  "userId": "%s",
+                  "email": "%s",
+                  "username": "%s",
+                  "displayName": "%s",
+                  "active": %s,
+                  "grantedById": "00000000-0000-0000-0000-000000000001",
+                  "grantedAt": "2026-04-21T20:00:00Z",
+                  "createdAt": "2026-04-21T20:00:00Z",
+                  "updatedAt": "2026-04-21T20:00:00Z"
+                }
+                """.formatted(adminId, userId, email, email.substring(0, email.indexOf('@')), displayName, active);
+    }
+
+    private static String importSettingsJson(String workspaceId) {
+        return """
+                {
+                  "workspaceId": "%s",
+                  "sampleJobsEnabled": true,
+                  "deploymentSampleJobsEnabled": true,
+                  "sampleJobsAvailable": true
+                }
+                """.formatted(workspaceId);
+    }
+
+    private static String importJobJson(String importJobId, String workspaceId, String status) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "requestedById": "00000000-0000-0000-0000-000000000001",
+                  "provider": "csv",
+                  "status": "%s",
+                  "config": {"source": "browser"},
+                  "openConflictCompletionAccepted": false,
+                  "openConflictCompletionCount": 0,
+                  "records": []
+                }
+                """.formatted(importJobId, workspaceId, status);
+    }
+
+    private static String importRecordJson(String recordId, String importJobId, String sourceType, String sourceId, String status, String conflictStatus) {
+        return """
+                {
+                  "id": "%s",
+                  "importJobId": "%s",
+                  "sourceType": "%s",
+                  "sourceId": "%s",
+                  "targetType": "work_item",
+                  "targetId": "00000000-0000-0000-0000-000000000d09",
+                  "status": "%s",
+                  "rawPayload": {
+                    "title": "Browser imported story",
+                    "type": "Story",
+                    "status": "Open"
+                  },
+                  "conflictStatus": %s,
+                  "conflictReason": %s
+                }
+                """.formatted(
+                recordId,
+                importJobId,
+                sourceType,
+                sourceId,
+                status,
+                conflictStatus == null ? "null" : "\"" + conflictStatus + "\"",
+                conflictStatus == null ? "null" : "\"Browser conflict job\""
+        );
+    }
+
+    private static String transformPresetJson(String presetId, String workspaceId) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "name": "Browser Import Preset",
+                  "description": "Browser import preset",
+                  "transformationConfig": {"title": ["trim"]},
+                  "enabled": true,
+                  "version": 1,
+                  "createdAt": "2026-04-21T20:00:00Z",
+                  "updatedAt": "2026-04-21T20:00:00Z"
+                }
+                """.formatted(presetId, workspaceId);
+    }
+
+    private static String mappingTemplateJson(String templateId, String workspaceId, String projectId, String presetId) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "name": "Browser CSV Mapping",
+                  "provider": "csv",
+                  "sourceType": "row",
+                  "targetType": "work_item",
+                  "projectId": "%s",
+                  "workItemTypeKey": "story",
+                  "statusKey": "open",
+                  "transformPresetId": "%s",
+                  "fieldMapping": {"title": "title"},
+                  "defaults": {},
+                  "transformationConfig": {},
+                  "enabled": true,
+                  "createdAt": "2026-04-21T20:00:00Z",
+                  "updatedAt": "2026-04-21T20:00:00Z"
+                }
+                """.formatted(templateId, workspaceId, projectId, presetId);
+    }
+
+    private static String conflictResolutionJobJson(String conflictJobId, String workspaceId, String importJobId, String status) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "importJobId": "%s",
+                  "requestedById": "00000000-0000-0000-0000-000000000001",
+                  "resolution": "skip",
+                  "scope": "filtered",
+                  "status": "%s",
+                  "sourceTypeFilter": "row",
+                  "expectedCount": 1,
+                  "matchedCount": 1,
+                  "resolvedCount": %d,
+                  "failedCount": 0,
+                  "requestedAt": "2026-04-21T20:00:00Z",
+                  "finishedAt": "2026-04-21T20:00:01Z",
+                  "confirmation": "RESOLVE FILTERED CONFLICTS"
+                }
+                """.formatted(conflictJobId, workspaceId, importJobId, status, "completed".equals(status) ? 1 : 0);
+    }
+
+    private static String importJobDiffJson(String importJobId, String workspaceId) {
+        return """
+                {
+                  "importJobId": "%s",
+                  "workspaceId": "%s",
+                  "recordCount": 1,
+                  "versionCount": 1,
+                  "diffCount": 0,
+                  "records": []
+                }
+                """.formatted(importJobId, workspaceId);
+    }
+
+    private static String exportJobJson(String exportJobId, String workspaceId, String exportType, String status) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "requestedById": "00000000-0000-0000-0000-000000000001",
+                  "exportType": "%s",
+                  "status": "%s",
+                  "fileAttachmentId": "00000000-0000-0000-0000-000000000d10",
+                  "filename": "browser-import-export.csv",
+                  "contentType": "text/csv",
+                  "sizeBytes": 128,
+                  "checksum": "sha256:browser",
+                  "requestPayload": {},
+                  "createdAt": "2026-04-21T20:00:00Z",
+                  "startedAt": "2026-04-21T20:00:00Z",
+                  "finishedAt": "2026-04-21T20:00:01Z"
+                }
+                """.formatted(exportJobId, workspaceId, exportType, status);
+    }
+
+    private static String importCompletionJson() {
+        return """
+                {
+                  "completedJobs": 1,
+                  "completedWithOpenConflicts": 0,
+                  "acceptedOpenConflictCount": 0,
+                  "lastOpenConflictCompletedAt": null
+                }
+                """;
     }
 
     private static void fulfillJson(Route route, int status, String body) {

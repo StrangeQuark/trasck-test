@@ -16,6 +16,7 @@ import com.strangequark.trascktest.support.AuthSession;
 import com.strangequark.trascktest.support.JsonSupport;
 import com.strangequark.trascktest.support.RuntimeChecks;
 import com.strangequark.trascktest.support.TestWorkspace;
+import com.strangequark.trascktest.support.UniqueData;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -74,6 +75,7 @@ class SecurityPolicyApiTest {
 
             boolean originalAnonymousRead = workspacePolicy.path("anonymousReadEnabled").asBoolean(false);
             String originalVisibility = projectPolicy.path("visibility").asText("private");
+            String publicWorkItemId = null;
             APIRequestContext anonymous = ApiRequestFactory.backend(playwright, config);
             try {
                 JsonNode privateProjectPolicy = session.requireJson(session.patch(
@@ -109,7 +111,43 @@ class SecurityPolicyApiTest {
                 JsonNode publicProject = JsonSupport.read(publicProjectResponse.text());
                 assertEquals(workspace.projectId(), publicProject.path("id").asText(), publicProject.toString());
                 assertEquals("public", publicProject.path("visibility").asText(), publicProject.toString());
+
+                JsonNode publicWorkItem = session.requireJson(session.post(
+                        "/api/v1/projects/" + workspace.projectId() + "/work-items",
+                        JsonSupport.object(
+                                "typeKey", "story",
+                                "title", "Playwright public story " + UniqueData.suffix(),
+                                "descriptionMarkdown", "Visible through anonymous public project work item reads.",
+                                "visibility", "inherited"
+                        )
+                ), 201);
+                publicWorkItemId = publicWorkItem.path("id").asText();
+
+                APIResponse publicWorkItemsResponse = anonymous.get("/api/v1/public/projects/" + workspace.projectId() + "/work-items?limit=25");
+                ApiDiagnostics.writeSnippet("public-project-work-items-open", "GET public project work items while public read is enabled", publicWorkItemsResponse);
+                assertEquals(200, publicWorkItemsResponse.status(), publicWorkItemsResponse.text());
+                JsonNode publicWorkItems = JsonSupport.read(publicWorkItemsResponse.text());
+                assertTrue(containsId(publicWorkItems.path("items"), publicWorkItemId), publicWorkItems.toString());
+
+                APIResponse publicWorkItemResponse = anonymous.get("/api/v1/public/projects/" + workspace.projectId() + "/work-items/" + publicWorkItemId);
+                ApiDiagnostics.writeSnippet("public-project-work-item-open", "GET public project work item while public read is enabled", publicWorkItemResponse);
+                assertEquals(200, publicWorkItemResponse.status(), publicWorkItemResponse.text());
+                JsonNode anonymousWorkItem = JsonSupport.read(publicWorkItemResponse.text());
+                assertEquals(publicWorkItemId, anonymousWorkItem.path("id").asText(), anonymousWorkItem.toString());
+                assertFalse(anonymousWorkItem.has("assigneeId"), anonymousWorkItem.toString());
+                assertFalse(anonymousWorkItem.has("reporterId"), anonymousWorkItem.toString());
+
+                session.requireJson(session.patch(
+                        "/api/v1/work-items/" + publicWorkItemId,
+                        JsonSupport.object("visibility", "private")
+                ), 200);
+                APIResponse privateWorkItemResponse = anonymous.get("/api/v1/public/projects/" + workspace.projectId() + "/work-items/" + publicWorkItemId);
+                ApiDiagnostics.writeSnippet("public-project-work-item-private", "GET private work item through public project read", privateWorkItemResponse);
+                assertEquals(404, privateWorkItemResponse.status(), privateWorkItemResponse.text());
             } finally {
+                if (publicWorkItemId != null) {
+                    session.delete("/api/v1/work-items/" + publicWorkItemId);
+                }
                 session.patch(
                         "/api/v1/projects/" + workspace.projectId() + "/security-policy",
                         JsonSupport.object("visibility", originalVisibility)
@@ -121,5 +159,14 @@ class SecurityPolicyApiTest {
                 anonymous.dispose();
             }
         }
+    }
+
+    private static boolean containsId(JsonNode rows, String id) {
+        for (JsonNode row : rows) {
+            if (id.equals(row.path("id").asText())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

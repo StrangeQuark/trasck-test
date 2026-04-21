@@ -1,6 +1,7 @@
 package com.strangequark.trascktest.e2e;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.Locator;
@@ -13,6 +14,7 @@ import com.strangequark.trascktest.support.BrowserFactory;
 import com.strangequark.trascktest.support.BrowserSession;
 import com.strangequark.trascktest.support.RuntimeChecks;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -39,6 +41,7 @@ class FrontendShellTest {
             assertThat(navigationLink(primaryNavigation, "Setup")).isVisible();
             assertThat(navigationLink(primaryNavigation, "Auth")).isVisible();
             assertThat(navigationLink(primaryNavigation, "Work")).isVisible();
+            assertThat(navigationLink(primaryNavigation, "Programs")).isVisible();
             assertThat(navigationLink(primaryNavigation, "System")).isVisible();
             assertThat(navigationLink(primaryNavigation, "Workspace")).isVisible();
             assertThat(navigationLink(primaryNavigation, "Project")).isVisible();
@@ -119,6 +122,7 @@ class FrontendShellTest {
             mockCsrf(page);
             mockProjectSecurityPolicy(page, projectId, publicEnabled);
             mockPublicProject(page, workspaceId, projectId, publicEnabled);
+            mockPublicProjectWorkItems(page, projectId, publicEnabled);
 
             page.navigate("/project-settings");
 
@@ -131,6 +135,54 @@ class FrontendShellTest {
             page.navigate("/public/projects/" + projectId);
             assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Public Project Preview"))).isVisible();
             assertThat(page.getByText("Browser Public Project").first()).isVisible();
+            assertThat(page.getByText("Browser public story").first()).isVisible();
+
+            session.screenshot();
+            session.assertNoConsoleErrors();
+        }
+    }
+
+    @Test
+    void programsPageManagesProgramPortfolioThroughBrowserUi() {
+        RuntimeChecks.requireHttpService("Trasck frontend", config.frontendBaseUrl(), "/", config.timeout());
+
+        String workspaceId = "00000000-0000-0000-0000-000000000101";
+        String projectId = "00000000-0000-0000-0000-000000000501";
+        String programId = "00000000-0000-0000-0000-000000000801";
+        AtomicBoolean programCreated = new AtomicBoolean(false);
+        AtomicBoolean projectAssigned = new AtomicBoolean(false);
+        AtomicBoolean projectRemoved = new AtomicBoolean(false);
+        AtomicBoolean programArchived = new AtomicBoolean(false);
+
+        try (Playwright playwright = Playwright.create();
+                Browser browser = BrowserFactory.launch(playwright, config);
+                BrowserSession session = BrowserSession.start(browser, config, "programs-ui")) {
+            Page page = session.page();
+            page.addInitScript("localStorage.setItem('trasck.workspaceId', '" + workspaceId + "');"
+                    + "localStorage.setItem('trasck.projectId', '" + projectId + "');"
+                    + "localStorage.setItem('trasck.apiBaseUrl', '" + config.frontendBaseUrl() + "');");
+            mockCurrentUser(page);
+            mockCsrf(page);
+            mockPrograms(page, workspaceId, projectId, programId, programCreated, projectAssigned, projectRemoved, programArchived);
+
+            page.navigate("/programs");
+
+            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Program Portfolio"))).isVisible();
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create program")).click();
+            assertThat(page.locator("input[value='Browser Portfolio']").first()).isVisible();
+
+            page.getByLabel("Project ID").fill(projectId);
+            page.getByLabel("Position").fill("2");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Assign project")).click();
+            assertThat(page.getByText(projectId).first()).isVisible();
+
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load summary")).click();
+            assertThat(page.getByText("program").first()).isVisible();
+
+            page.onceDialog(dialog -> dialog.accept());
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Archive")).click();
+            assertTrue(programArchived.get(), "Archive endpoint should be called from the browser flow");
+            assertThat(page.getByLabel("Status").first()).hasValue("archived");
 
             session.screenshot();
             session.assertNoConsoleErrors();
@@ -231,6 +283,175 @@ class FrontendShellTest {
                     }
                     """);
         });
+    }
+
+    private static void mockPublicProjectWorkItems(Page page, String projectId, AtomicBoolean publicEnabled) {
+        page.route(Pattern.compile(".*/api/v1/public/projects/" + projectId + "/work-items(\\?.*)?$"), route -> {
+            if (publicEnabled.get()) {
+                fulfillJson(route, 200, """
+                        {
+                          "items": [{
+                            "id": "00000000-0000-0000-0000-000000000601",
+                            "projectId": "%s",
+                            "key": "BPP-1",
+                            "title": "Browser public story",
+                            "visibility": "inherited"
+                          }],
+                          "nextCursor": null,
+                          "hasMore": false,
+                          "limit": 25
+                        }
+                        """.formatted(projectId));
+                return;
+            }
+            fulfillJson(route, 404, """
+                    {
+                      "message": "Public project not found"
+                    }
+                    """);
+        });
+        page.route("**/api/v1/public/projects/" + projectId + "/work-items/*", route -> {
+            if (publicEnabled.get()) {
+                fulfillJson(route, 200, """
+                        {
+                          "id": "00000000-0000-0000-0000-000000000601",
+                          "projectId": "%s",
+                          "key": "BPP-1",
+                          "title": "Browser public story",
+                          "descriptionMarkdown": "Browser public work item preview",
+                          "visibility": "inherited"
+                        }
+                        """.formatted(projectId));
+                return;
+            }
+            fulfillJson(route, 404, """
+                    {
+                      "message": "Public project not found"
+                    }
+                    """);
+        });
+    }
+
+    private static void mockPrograms(
+            Page page,
+            String workspaceId,
+            String projectId,
+            String programId,
+            AtomicBoolean programCreated,
+            AtomicBoolean projectAssigned,
+            AtomicBoolean projectRemoved,
+            AtomicBoolean programArchived
+    ) {
+        page.route("**/api/v1/workspaces/" + workspaceId + "/programs", route -> {
+            String method = route.request().method();
+            if ("GET".equals(method)) {
+                fulfillJson(route, 200, programCreated.get() ? "[" + programJson(programId, workspaceId, programArchived.get(), projectAssigned.get() && !projectRemoved.get(), projectId) + "]" : "[]");
+                return;
+            }
+            if ("POST".equals(method)) {
+                programCreated.set(true);
+                programArchived.set(false);
+                fulfillJson(route, 201, programJson(programId, workspaceId, false, false, projectId));
+                return;
+            }
+            route.fulfill(new Route.FulfillOptions().setStatus(405));
+        });
+        page.route("**/api/v1/programs/" + programId + "/projects/" + projectId, route -> {
+            String method = route.request().method();
+            if ("PUT".equals(method)) {
+                projectAssigned.set(true);
+                projectRemoved.set(false);
+                fulfillJson(route, 200, """
+                        {
+                          "programId": "%s",
+                          "projectId": "%s",
+                          "position": 2,
+                          "createdAt": "2026-04-21T17:00:00Z"
+                        }
+                        """.formatted(programId, projectId));
+                return;
+            }
+            if ("DELETE".equals(method)) {
+                projectRemoved.set(true);
+                route.fulfill(new Route.FulfillOptions().setStatus(204));
+                return;
+            }
+            route.fulfill(new Route.FulfillOptions().setStatus(405));
+        });
+        page.route("**/api/v1/programs/" + programId + "/projects", route -> {
+            if ("GET".equals(route.request().method())) {
+                fulfillJson(route, 200, projectAssigned.get() && !projectRemoved.get() ? """
+                        [{
+                          "programId": "%s",
+                          "projectId": "%s",
+                          "position": 2,
+                          "createdAt": "2026-04-21T17:00:00Z"
+                        }]
+                        """.formatted(programId, projectId) : "[]");
+                return;
+            }
+            route.fulfill(new Route.FulfillOptions().setStatus(405));
+        });
+        page.route("**/api/v1/reports/programs/" + programId + "/dashboard-summary**", route -> fulfillJson(route, 200, """
+                {
+                  "workspaceId": "%s",
+                  "scope": {
+                    "scopeType": "program",
+                    "programId": "%s",
+                    "projectIds": ["%s"]
+                  },
+                  "totals": {
+                    "workItems": 1
+                  },
+                  "byProject": []
+                }
+                """.formatted(workspaceId, programId, projectId)));
+        page.route("**/api/v1/programs/" + programId, route -> {
+            String method = route.request().method();
+            if ("GET".equals(method) || "PATCH".equals(method)) {
+                fulfillJson(route, 200, programJson(programId, workspaceId, programArchived.get(), projectAssigned.get() && !projectRemoved.get(), projectId));
+                return;
+            }
+            if ("DELETE".equals(method)) {
+                programArchived.set(true);
+                route.fulfill(new Route.FulfillOptions().setStatus(204));
+                return;
+            }
+            route.fulfill(new Route.FulfillOptions().setStatus(405));
+        });
+    }
+
+    private static String programJson(String programId, String workspaceId, boolean archived, boolean projectAssigned, String projectId) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "name": "Browser Portfolio",
+                  "description": "Browser portfolio test program",
+                  "status": "%s",
+                  "roadmapConfig": {
+                    "view": "timeline"
+                  },
+                  "reportConfig": {
+                    "defaultWindow": "current_quarter"
+                  },
+                  "projects": %s,
+                  "createdAt": "2026-04-21T17:00:00Z",
+                  "updatedAt": "2026-04-21T17:00:00Z"
+                }
+                """.formatted(
+                programId,
+                workspaceId,
+                archived ? "archived" : "active",
+                projectAssigned ? """
+                        [{
+                          "programId": "%s",
+                          "projectId": "%s",
+                          "position": 2,
+                          "createdAt": "2026-04-21T17:00:00Z"
+                        }]
+                        """.formatted(programId, projectId) : "[]"
+        );
     }
 
     private static String privateProjectPolicy(String projectId) {

@@ -166,6 +166,8 @@ covered	GET	/api/v1/programs/{programId}/projects	program-controller	listProgram
 covered	DELETE	/api/v1/programs/{programId}/projects/{projectId}	program-controller	removeProgramProject	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
 covered	PUT	/api/v1/programs/{programId}/projects/{projectId}	program-controller	assignProgramProject	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
 covered	GET	/api/v1/public/projects/{projectId}	public-project-controller	getPublicProject	SecurityPolicyApiTest#authenticatedWorkspaceAndProjectPoliciesExposeEffectiveLimitsAndRejectInvalidUpdates
+covered	GET	/api/v1/public/projects/{projectId}/work-items	public-project-controller	listPublicProjectWorkItems	SecurityPolicyApiTest#authenticatedWorkspaceAndProjectPoliciesExposeEffectiveLimitsAndRejectInvalidUpdates
+covered	GET	/api/v1/public/projects/{projectId}/work-items/{workItemId}	public-project-controller	getPublicProjectWorkItem	SecurityPolicyApiTest#authenticatedWorkspaceAndProjectPoliciesExposeEffectiveLimitsAndRejectInvalidUpdates
 covered	DELETE	/api/v1/releases/{releaseId}	release-roadmap-controller	deleteRelease	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
 covered	GET	/api/v1/releases/{releaseId}	release-roadmap-controller	getRelease	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
 covered	PATCH	/api/v1/releases/{releaseId}	release-roadmap-controller	updateRelease	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources

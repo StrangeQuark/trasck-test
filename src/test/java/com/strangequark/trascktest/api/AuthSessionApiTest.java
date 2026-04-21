@@ -1,0 +1,86 @@
+package com.strangequark.trascktest.api;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import com.microsoft.playwright.APIRequest;
+import com.microsoft.playwright.APIRequestContext;
+import com.microsoft.playwright.APIResponse;
+import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.RequestOptions;
+import com.strangequark.trascktest.config.TrasckTestConfig;
+import com.strangequark.trascktest.support.ApiDiagnostics;
+import com.strangequark.trascktest.support.ApiRequestFactory;
+import com.strangequark.trascktest.support.RuntimeChecks;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
+@Tag("api")
+@Tag("auth")
+@Tag("smoke")
+class AuthSessionApiTest {
+    private static final Pattern ACCESS_TOKEN_PATTERN = Pattern.compile("\"accessToken\"\\s*:\\s*\"([^\"]+)\"");
+
+    private final TrasckTestConfig config = TrasckTestConfig.load();
+
+    @Test
+    void currentUserRequiresAuthentication() {
+        RuntimeChecks.requireHttpService("Trasck backend", config.backendBaseUrl(), "/api/trasck/health", config.timeout());
+
+        try (Playwright playwright = Playwright.create()) {
+            APIRequestContext request = ApiRequestFactory.backend(playwright, config);
+            APIResponse response = request.get("/api/v1/auth/me");
+            ApiDiagnostics.writeSnippet("auth-me-unauthenticated", "GET /api/v1/auth/me", response);
+
+            assertTrue(response.status() == 401 || response.status() == 403, response.text());
+            request.dispose();
+        }
+    }
+
+    @Test
+    void loginEstablishesCookieAndBearerSessionsWhenCredentialsAreProvided() {
+        assumeTrue(config.hasLoginCredentials(), "Set TRASCK_E2E_LOGIN_IDENTIFIER and TRASCK_E2E_LOGIN_PASSWORD to run login smoke coverage");
+        RuntimeChecks.requireHttpService("Trasck backend", config.backendBaseUrl(), "/api/trasck/health", config.timeout());
+
+        try (Playwright playwright = Playwright.create()) {
+            APIRequestContext cookieRequest = ApiRequestFactory.backend(playwright, config);
+            APIResponse login = cookieRequest.post("/api/v1/auth/login", RequestOptions.create().setData(Map.of(
+                    "identifier", config.loginIdentifier(),
+                    "password", config.loginPassword()
+            )));
+            ApiDiagnostics.writeSnippet("auth-login", "POST /api/v1/auth/login", login);
+            assertEquals(200, login.status(), login.text());
+
+            APIResponse meByCookie = cookieRequest.get("/api/v1/auth/me");
+            ApiDiagnostics.writeSnippet("auth-me-cookie", "GET /api/v1/auth/me using cookie", meByCookie);
+            assertEquals(200, meByCookie.status(), meByCookie.text());
+
+            String accessToken = accessToken(login);
+            assertFalse(accessToken.isBlank(), "Login response did not include an accessToken");
+            APIRequestContext bearerRequest = playwright.request().newContext(new APIRequest.NewContextOptions()
+                    .setBaseURL(config.backendBaseUrl().toString())
+                    .setExtraHTTPHeaders(Map.of("Authorization", "Bearer " + accessToken)));
+            APIResponse meByBearer = bearerRequest.get("/api/v1/auth/me");
+            ApiDiagnostics.writeSnippet("auth-me-bearer", "GET /api/v1/auth/me using Bearer", meByBearer);
+            assertEquals(200, meByBearer.status(), meByBearer.text());
+
+            APIResponse missingCsrf = cookieRequest.post("/api/v1/auth/tokens/personal", RequestOptions.create().setData(Map.of(
+                    "name", "csrf-smoke-token"
+            )));
+            ApiDiagnostics.writeSnippet("auth-cookie-missing-csrf", "POST /api/v1/auth/tokens/personal without CSRF", missingCsrf);
+            assertEquals(403, missingCsrf.status(), missingCsrf.text());
+            bearerRequest.dispose();
+            cookieRequest.dispose();
+        }
+    }
+
+    private String accessToken(APIResponse login) {
+        Matcher matcher = ACCESS_TOKEN_PATTERN.matcher(login.text());
+        return matcher.find() ? matcher.group(1) : "";
+    }
+}

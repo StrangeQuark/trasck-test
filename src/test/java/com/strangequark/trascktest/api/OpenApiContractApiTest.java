@@ -1,7 +1,6 @@
 package com.strangequark.trascktest.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.microsoft.playwright.APIRequestContext;
@@ -15,26 +14,22 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @Tag("api")
+@Tag("contract")
 @Tag("smoke")
-class CsrfApiTest {
+class OpenApiContractApiTest {
     private final TrasckTestConfig config = TrasckTestConfig.load();
 
     @Test
-    void csrfEndpointReturnsBrowserTokenMetadata() {
+    void openApiContractIsAvailableInLocalProfiles() {
         RuntimeChecks.requireHttpService("Trasck backend", config.backendBaseUrl(), "/api/trasck/health", config.timeout());
 
         try (Playwright playwright = Playwright.create()) {
             APIRequestContext request = ApiRequestFactory.backend(playwright, config);
-            APIResponse response = request.get("/api/v1/auth/csrf");
-            ApiDiagnostics.writeSnippet("csrf-metadata", "GET /api/v1/auth/csrf", response);
-            String body = response.text();
+            APIResponse response = request.get("/v3/api-docs");
+            ApiDiagnostics.writeSnippet("openapi-contract", "GET /v3/api-docs", response);
 
-            assertEquals(200, response.status(), body);
-            assertFalse(body.isBlank());
-            assertTrue(body.contains("\"headerName\""), body);
-            assertTrue(body.contains("\"parameterName\""), body);
-            assertTrue(body.contains("\"token\""), body);
-            assertFalse(response.headers().getOrDefault("content-type", "").isBlank());
+            assertEquals(200, response.status(), response.text());
+            assertTrue(response.text().contains("\"openapi\""), response.text());
             request.dispose();
         }
     }

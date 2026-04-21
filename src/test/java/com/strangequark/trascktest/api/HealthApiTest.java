@@ -2,11 +2,12 @@ package com.strangequark.trascktest.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.microsoft.playwright.APIRequest;
 import com.microsoft.playwright.APIRequestContext;
 import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Playwright;
 import com.strangequark.trascktest.config.TrasckTestConfig;
+import com.strangequark.trascktest.support.ApiDiagnostics;
+import com.strangequark.trascktest.support.ApiRequestFactory;
 import com.strangequark.trascktest.support.RuntimeChecks;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -21,9 +22,9 @@ class HealthApiTest {
         RuntimeChecks.requireHttpService("Trasck backend", config.backendBaseUrl(), "/api/trasck/health", config.timeout());
 
         try (Playwright playwright = Playwright.create()) {
-            APIRequestContext request = playwright.request().newContext(new APIRequest.NewContextOptions()
-                    .setBaseURL(config.backendBaseUrl().toString()));
+            APIRequestContext request = ApiRequestFactory.backend(playwright, config);
             APIResponse response = request.get("/api/trasck/health");
+            ApiDiagnostics.writeSnippet("backend-health", "GET /api/trasck/health", response);
 
             assertEquals(200, response.status(), response.text());
             assertEquals("200 OK", response.text());

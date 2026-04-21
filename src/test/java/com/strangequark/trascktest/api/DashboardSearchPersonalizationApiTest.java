@@ -27,13 +27,14 @@ class DashboardSearchPersonalizationApiTest {
 
     @Test
     void authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources() {
-        assumeTrue(config.hasLoginCredentials(), "Set TRASCK_E2E_LOGIN_IDENTIFIER and TRASCK_E2E_LOGIN_PASSWORD for authenticated API coverage");
-        TestWorkspace workspace = TestWorkspace.require(config);
+        assumeTrue(config.canResolveAuthenticatedWorkspace(),
+                "Set login/workspace/project env values or TRASCK_E2E_ALLOW_SETUP=true for authenticated API coverage");
         RuntimeChecks.requireHttpService("Trasck backend", config.backendBaseUrl(), "/api/trasck/health", config.timeout());
 
         try (Playwright playwright = Playwright.create();
                 AuthSession session = AuthSession.login(playwright, config);
                 ApiCleanup cleanup = new ApiCleanup()) {
+            TestWorkspace workspace = TestWorkspace.require(playwright, config);
             String suffix = UniqueData.suffix();
 
             JsonNode savedFilter = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/saved-filters", JsonSupport.object(

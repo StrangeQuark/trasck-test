@@ -11,7 +11,9 @@ Current starter coverage:
 - Backend API smoke test for `GET /api/trasck/health`.
 - Backend API smoke test for `GET /api/v1/auth/csrf`.
 - Backend API smoke tests for setup endpoint reachability, unauthenticated current-user denial, optional login/current-user cookie and Bearer sessions, and local OpenAPI availability.
-- Authenticated backend API coverage for workspace/project security policy, work item collaboration, planning/board resources, dashboards, saved filters, and personalization when local credentials plus workspace/project IDs are configured.
+- Optional first-run setup bootstrap coverage that creates a disposable local stack through `/api/v1/setup` and proves a second setup attempt is rejected.
+- Authenticated backend API coverage for workspace/project security policy, personal and service token scope behavior, system-admin/audit/export reads, work item collaboration, planning/board resources, dashboards, saved filters, and personalization when local credentials plus workspace/project IDs are configured or setup bootstrap is enabled against an empty stack.
+- Generated OpenAPI route inventory output under `test-results/api/backend-route-inventory.tsv` so backend API gaps can be closed route by route.
 - Frontend browser smoke test for the route shell and core navigation.
 
 ## Prerequisites
@@ -47,16 +49,17 @@ Supported variables:
 - `TRASCK_E2E_LOGIN_PASSWORD`: optional existing Trasck password for authenticated smoke tests.
 - `TRASCK_E2E_WORKSPACE_ID`: optional workspace ID used by authenticated workspace/project API coverage.
 - `TRASCK_E2E_PROJECT_ID`: optional project ID used by authenticated project API coverage.
+- `TRASCK_E2E_ALLOW_SETUP`: set to `true` only for disposable local stacks where the suite may call first-run `/api/v1/setup`. Defaults to `false`.
 
 Do not commit `.env`; use `.env.example` for safe defaults only.
 
-The authenticated smoke tests are skipped unless both login variables are set. Workspace/project API tests also require `TRASCK_E2E_WORKSPACE_ID` and `TRASCK_E2E_PROJECT_ID`. Use a disposable local test user with the least permission needed for the scenario being exercised; current broad API coverage expects project/workspace admin permissions so it can create and clean up its own test resources through public APIs.
+The authenticated smoke tests are skipped unless both login variables are set or `TRASCK_E2E_ALLOW_SETUP=true` can create a disposable first-run stack. Workspace/project API tests also require `TRASCK_E2E_WORKSPACE_ID` and `TRASCK_E2E_PROJECT_ID` unless setup bootstrap creates those IDs in the current run. Use a disposable local test user with the least permission needed for the scenario being exercised; current broad API coverage expects project/workspace admin permissions so it can create and clean up its own test resources through public APIs.
 
 ## Local Stack
 
 Run the backend and frontend with their normal local settings, keeping the backend on port `6100` and the frontend on port `8080`. The smoke suite assumes the backend owns PostgreSQL, Redis, Maildev, and any other service dependencies; `trasck-test` only drives HTTP and browser behavior from outside the application.
 
-For deterministic local runs, start the stack from a known database state, create or reuse a disposable test user, set the optional login and workspace/project variables in `.env`, then run `mvn test` from this repository. The API tests create uniquely named temporary resources and delete the resources they create through Trasck HTTP APIs; they do not use direct database access.
+For deterministic local runs, start the stack from a known database state, create or reuse a disposable test user, set the optional login and workspace/project variables in `.env`, then run `mvn test` from this repository. For a brand-new disposable database, set `TRASCK_E2E_ALLOW_SETUP=true` instead; the suite will create a Playwright admin/workspace/project through `/api/v1/setup`, reuse those IDs in-memory for the same Maven run, and verify that a second setup call returns conflict. The API tests create uniquely named temporary resources and delete the resources they create through Trasck HTTP APIs; they do not use direct database access.
 
 ## Run Tests
 
@@ -87,6 +90,7 @@ docker compose run --rm trasck-test
 Artifacts are written under `test-results/`:
 
 - `test-results/api`: response snippets with sensitive headers and token-shaped body fields redacted.
+- `test-results/api/backend-route-inventory.tsv`: generated OpenAPI route inventory with `covered`, `planned-high-risk`, and `planned` statuses.
 - `test-results/screenshots`: browser screenshots captured by smoke tests.
 - `test-results/traces`: Playwright trace ZIP files for browser runs.
 - `test-results/report.html`: Extent report output when report listeners are enabled by future suites.

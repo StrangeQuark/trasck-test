@@ -21,13 +21,14 @@ public final class AuthSession implements AutoCloseable {
     }
 
     public static AuthSession login(Playwright playwright, TrasckTestConfig config) {
+        SetupBootstrap.BootstrapContext context = resolveLoginContext(playwright, config);
         APIRequestContext loginRequest = ApiRequestFactory.backend(playwright, config);
         JsonNode body;
         String accessToken;
         try {
             APIResponse login = loginRequest.post("/api/v1/auth/login", RequestOptions.create().setData(JsonSupport.object(
-                    "identifier", config.loginIdentifier(),
-                    "password", config.loginPassword()
+                    "identifier", context.loginIdentifier(),
+                    "password", context.loginPassword()
             )));
             ApiDiagnostics.writeSnippet("auth-session-login", "POST /api/v1/auth/login", login);
             assertEquals(200, login.status(), login.text());
@@ -48,6 +49,18 @@ public final class AuthSession implements AutoCloseable {
                         "Authorization", "Bearer " + accessToken
                 )));
         return new AuthSession(bearerRequest, body.path("user"));
+    }
+
+    private static SetupBootstrap.BootstrapContext resolveLoginContext(Playwright playwright, TrasckTestConfig config) {
+        if (config.hasLoginCredentials()) {
+            return new SetupBootstrap.BootstrapContext(
+                    config.loginIdentifier(),
+                    config.loginPassword(),
+                    config.workspaceId(),
+                    config.projectId()
+            );
+        }
+        return SetupBootstrap.require(playwright, config);
     }
 
     public JsonNode user() {

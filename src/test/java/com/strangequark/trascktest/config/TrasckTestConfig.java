@@ -16,9 +16,13 @@ public record TrasckTestConfig(
         String workspaceId,
         String projectId,
         boolean allowSetupBootstrap,
-        boolean seedSampleData
+        boolean seedSampleData,
+        String localReceiverBindHost,
+        int localReceiverPort,
+        URI localReceiverPublicBaseUrl
 ) {
     public static TrasckTestConfig load() {
+        int localReceiverPort = Integer.parseInt(EnvUtility.getEnvVar("TRASCK_E2E_LOCAL_RECEIVER_PORT", "6199"));
         return new TrasckTestConfig(
                 normalizedUri(EnvUtility.getEnvVar("TRASCK_BACKEND_BASE_URL", "http://localhost:6100")),
                 normalizedUri(EnvUtility.getEnvVar("TRASCK_FRONTEND_BASE_URL", "http://localhost:8080")),
@@ -30,7 +34,13 @@ public record TrasckTestConfig(
                 blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_WORKSPACE_ID", "")),
                 blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_PROJECT_ID", "")),
                 Boolean.parseBoolean(EnvUtility.getEnvVar("TRASCK_E2E_ALLOW_SETUP", "false")),
-                Boolean.parseBoolean(EnvUtility.getEnvVar("TRASCK_E2E_SEED_SAMPLE_DATA", "false"))
+                Boolean.parseBoolean(EnvUtility.getEnvVar("TRASCK_E2E_SEED_SAMPLE_DATA", "false")),
+                EnvUtility.getEnvVar("TRASCK_E2E_LOCAL_RECEIVER_BIND_HOST", "0.0.0.0").trim(),
+                localReceiverPort,
+                normalizedUri(EnvUtility.getEnvVar(
+                        "TRASCK_E2E_LOCAL_RECEIVER_PUBLIC_BASE_URL",
+                        "http://localhost:" + localReceiverPort
+                ))
         );
     }
 

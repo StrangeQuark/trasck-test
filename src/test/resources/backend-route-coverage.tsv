@@ -25,19 +25,19 @@ planned-high-risk	POST	/api/v1/auth/register	auth-controller	register
 covered	GET	/api/v1/auth/tokens/personal	auth-controller	listPersonalTokens	ApiTokenSecurityApiTest#personalTokensHideRawValuesOnListEnforceScopesAndStopWorkingAfterRevocation
 covered	POST	/api/v1/auth/tokens/personal	auth-controller	createPersonalToken	ApiTokenSecurityApiTest#personalTokensHideRawValuesOnListEnforceScopesAndStopWorkingAfterRevocation
 covered	DELETE	/api/v1/auth/tokens/{tokenId}	auth-controller	revokePersonalToken	ApiTokenSecurityApiTest#personalTokensHideRawValuesOnListEnforceScopesAndStopWorkingAfterRevocation
-planned-high-risk	GET	/api/v1/automation-jobs/{jobId}	automation-controller	getJob
-planned-high-risk	POST	/api/v1/automation-jobs/{jobId}/run	automation-controller	runJob
-planned-high-risk	DELETE	/api/v1/automation-rules/{ruleId}	automation-controller	deleteRule
-planned-high-risk	GET	/api/v1/automation-rules/{ruleId}	automation-controller	getRule
-planned-high-risk	PATCH	/api/v1/automation-rules/{ruleId}	automation-controller	updateRule
-planned-high-risk	POST	/api/v1/automation-rules/{ruleId}/actions	automation-controller	createAction
-planned-high-risk	DELETE	/api/v1/automation-rules/{ruleId}/actions/{actionId}	automation-controller	deleteAction
-planned-high-risk	PATCH	/api/v1/automation-rules/{ruleId}/actions/{actionId}	automation-controller	updateAction
-planned-high-risk	POST	/api/v1/automation-rules/{ruleId}/conditions	automation-controller	createCondition
-planned-high-risk	DELETE	/api/v1/automation-rules/{ruleId}/conditions/{conditionId}	automation-controller	deleteCondition
-planned-high-risk	PATCH	/api/v1/automation-rules/{ruleId}/conditions/{conditionId}	automation-controller	updateCondition
-planned-high-risk	POST	/api/v1/automation-rules/{ruleId}/execute	automation-controller	executeRule
-planned-high-risk	GET	/api/v1/automation-rules/{ruleId}/jobs	automation-controller	listJobs
+covered	GET	/api/v1/automation-jobs/{jobId}	automation-controller	getJob	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	POST	/api/v1/automation-jobs/{jobId}/run	automation-controller	runJob	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	DELETE	/api/v1/automation-rules/{ruleId}	automation-controller	deleteRule	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	GET	/api/v1/automation-rules/{ruleId}	automation-controller	getRule	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	PATCH	/api/v1/automation-rules/{ruleId}	automation-controller	updateRule	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	POST	/api/v1/automation-rules/{ruleId}/actions	automation-controller	createAction	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	DELETE	/api/v1/automation-rules/{ruleId}/actions/{actionId}	automation-controller	deleteAction	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	PATCH	/api/v1/automation-rules/{ruleId}/actions/{actionId}	automation-controller	updateAction	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	POST	/api/v1/automation-rules/{ruleId}/conditions	automation-controller	createCondition	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	DELETE	/api/v1/automation-rules/{ruleId}/conditions/{conditionId}	automation-controller	deleteCondition	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	PATCH	/api/v1/automation-rules/{ruleId}/conditions/{conditionId}	automation-controller	updateCondition	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	POST	/api/v1/automation-rules/{ruleId}/execute	automation-controller	executeRule	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	GET	/api/v1/automation-rules/{ruleId}/jobs	automation-controller	listJobs	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
 covered	DELETE	/api/v1/boards/{boardId}	board-controller	archiveBoard	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
 covered	GET	/api/v1/boards/{boardId}	board-controller	getBoard	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
 covered	PATCH	/api/v1/boards/{boardId}	board-controller	updateBoard	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
@@ -68,9 +68,9 @@ covered	GET	/api/v1/dashboards/{dashboardId}/render	dashboard-controller	render	
 covered	POST	/api/v1/dashboards/{dashboardId}/widgets	dashboard-controller	createWidget	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 covered	DELETE	/api/v1/dashboards/{dashboardId}/widgets/{widgetId}	dashboard-controller	deleteWidget	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 covered	PATCH	/api/v1/dashboards/{dashboardId}/widgets/{widgetId}	dashboard-controller	updateWidget	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
-planned-high-risk	GET	/api/v1/email-deliveries/{deliveryId}	automation-controller	getEmailDelivery
-planned-high-risk	POST	/api/v1/email-deliveries/{deliveryId}/cancel	automation-controller	cancelEmailDelivery
-planned-high-risk	POST	/api/v1/email-deliveries/{deliveryId}/retry	automation-controller	retryEmailDelivery
+covered	GET	/api/v1/email-deliveries/{deliveryId}	automation-controller	getEmailDelivery	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	POST	/api/v1/email-deliveries/{deliveryId}/cancel	automation-controller	cancelEmailDelivery	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	POST	/api/v1/email-deliveries/{deliveryId}/retry	automation-controller	retryEmailDelivery	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
 covered	DELETE	/api/v1/field-configurations/{fieldConfigurationId}	custom-field-controller	deleteFieldConfiguration	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	GET	/api/v1/field-configurations/{fieldConfigurationId}	custom-field-controller	getFieldConfiguration	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	PATCH	/api/v1/field-configurations/{fieldConfigurationId}	custom-field-controller	updateFieldConfiguration	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
@@ -244,12 +244,12 @@ covered	DELETE	/api/v1/teams/{teamId}/memberships/{userId}	team-controller	remov
 covered	GET	/api/v1/teams/{teamId}/personalization/views	personalization-controller	listTeamViews	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 covered	GET	/api/v1/teams/{teamId}/report-query-catalog	report-query-catalog-controller	listByTeam_1	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 covered	GET	/api/v1/teams/{teamId}/saved-filters	saved-filter-controller	listByTeam	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
-planned-high-risk	GET	/api/v1/webhook-deliveries/{deliveryId}	automation-controller	getWebhookDelivery
-planned-high-risk	POST	/api/v1/webhook-deliveries/{deliveryId}/cancel	automation-controller	cancelWebhookDelivery
-planned-high-risk	POST	/api/v1/webhook-deliveries/{deliveryId}/retry	automation-controller	retryWebhookDelivery
-planned-high-risk	DELETE	/api/v1/webhooks/{webhookId}	automation-controller	deleteWebhook
-planned-high-risk	PATCH	/api/v1/webhooks/{webhookId}	automation-controller	updateWebhook
-planned-high-risk	GET	/api/v1/webhooks/{webhookId}/deliveries	automation-controller	listWebhookDeliveries
+covered	GET	/api/v1/webhook-deliveries/{deliveryId}	automation-controller	getWebhookDelivery	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	POST	/api/v1/webhook-deliveries/{deliveryId}/cancel	automation-controller	cancelWebhookDelivery	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	POST	/api/v1/webhook-deliveries/{deliveryId}/retry	automation-controller	retryWebhookDelivery	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	DELETE	/api/v1/webhooks/{webhookId}	automation-controller	deleteWebhook	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	PATCH	/api/v1/webhooks/{webhookId}	automation-controller	updateWebhook	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	GET	/api/v1/webhooks/{webhookId}/deliveries	automation-controller	listWebhookDeliveries	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
 covered	DELETE	/api/v1/work-items/{workItemId}	work-item-controller	archive	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
 covered	GET	/api/v1/work-items/{workItemId}	work-item-controller	get	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
 covered	PATCH	/api/v1/work-items/{workItemId}	work-item-controller	update	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
@@ -304,24 +304,24 @@ covered	GET	/api/v1/workspaces/{workspaceId}/audit-retention-policy	audit-contro
 planned-high-risk	PUT	/api/v1/workspaces/{workspaceId}/audit-retention-policy	audit-controller	updateRetentionPolicy
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/audit-retention-policy/export	audit-controller	exportRetentionCandidates
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/audit-retention-policy/prune	audit-controller	pruneRetentionCandidates
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/automation-jobs/run-queued	automation-controller	runQueuedJobs
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/automation-rules	automation-controller	listRules
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/automation-rules	automation-controller	createRule
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/automation-worker-health	automation-controller	listWorkerHealth
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/automation-worker-runs	automation-controller	listWorkerRuns
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/automation-worker-runs/export	automation-controller	exportWorkerRuns
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/automation-worker-runs/prune	automation-controller	pruneWorkerRuns
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/automation-worker-settings	automation-controller	getWorkerSettings
-planned-high-risk	PATCH	/api/v1/workspaces/{workspaceId}/automation-worker-settings	automation-controller	updateWorkerSettings
+covered	POST	/api/v1/workspaces/{workspaceId}/automation-jobs/run-queued	automation-controller	runQueuedJobs	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	GET	/api/v1/workspaces/{workspaceId}/automation-rules	automation-controller	listRules	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	POST	/api/v1/workspaces/{workspaceId}/automation-rules	automation-controller	createRule	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	GET	/api/v1/workspaces/{workspaceId}/automation-worker-health	automation-controller	listWorkerHealth	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	GET	/api/v1/workspaces/{workspaceId}/automation-worker-runs	automation-controller	listWorkerRuns	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	POST	/api/v1/workspaces/{workspaceId}/automation-worker-runs/export	automation-controller	exportWorkerRuns	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	POST	/api/v1/workspaces/{workspaceId}/automation-worker-runs/prune	automation-controller	pruneWorkerRuns	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	GET	/api/v1/workspaces/{workspaceId}/automation-worker-settings	automation-controller	getWorkerSettings	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	PATCH	/api/v1/workspaces/{workspaceId}/automation-worker-settings	automation-controller	updateWorkerSettings	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
 covered	GET	/api/v1/workspaces/{workspaceId}/custom-fields	custom-field-controller	listCustomFields	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	POST	/api/v1/workspaces/{workspaceId}/custom-fields	custom-field-controller	createCustomField	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	GET	/api/v1/workspaces/{workspaceId}/dashboards	dashboard-controller	list_2	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 covered	POST	/api/v1/workspaces/{workspaceId}/dashboards	dashboard-controller	create_2	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/domain-events/replay	domain-event-admin-controller	replay
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/email-deliveries	automation-controller	listEmailDeliveries
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/email-deliveries/process	automation-controller	processEmailDeliveries
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/email-provider-settings	automation-controller	getEmailProviderSettings
-planned-high-risk	PUT	/api/v1/workspaces/{workspaceId}/email-provider-settings	automation-controller	updateEmailProviderSettings
+covered	GET	/api/v1/workspaces/{workspaceId}/email-deliveries	automation-controller	listEmailDeliveries	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	POST	/api/v1/workspaces/{workspaceId}/email-deliveries/process	automation-controller	processEmailDeliveries	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	GET	/api/v1/workspaces/{workspaceId}/email-provider-settings	automation-controller	getEmailProviderSettings	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	PUT	/api/v1/workspaces/{workspaceId}/email-provider-settings	automation-controller	updateEmailProviderSettings	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
 covered	GET	/api/v1/workspaces/{workspaceId}/export-jobs	audit-controller	listExportJobs	SystemAdminAuditApiTest#authenticatedAdminCanListSystemAdminsAuditLogAndExportJobs
 planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/export-jobs/{exportJobId}	audit-controller	getExportJob
 planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/export-jobs/{exportJobId}/download	audit-controller	downloadExportJob
@@ -393,6 +393,6 @@ covered	POST	/api/v1/workspaces/{workspaceId}/teams	team-controller	createTeam	P
 covered	GET	/api/v1/workspaces/{workspaceId}/users	auth-controller	listWorkspaceUsers	WorkspaceAdminApiTest#authenticatedAdminsCanManageRepositoryConnectionsInvitationsAndWorkspaceUsers
 covered	POST	/api/v1/workspaces/{workspaceId}/users	auth-controller	createUser	WorkspaceAdminApiTest#authenticatedAdminsCanManageRepositoryConnectionsInvitationsAndWorkspaceUsers
 covered	DELETE	/api/v1/workspaces/{workspaceId}/users/{userId}	auth-controller	removeWorkspaceUser	WorkspaceAdminApiTest#authenticatedAdminsCanManageRepositoryConnectionsInvitationsAndWorkspaceUsers
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/webhook-deliveries/process	automation-controller	processWebhookDeliveries
-planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/webhooks	automation-controller	listWebhooks
-planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/webhooks	automation-controller	createWebhook
+covered	POST	/api/v1/workspaces/{workspaceId}/webhook-deliveries/process	automation-controller	processWebhookDeliveries	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	GET	/api/v1/workspaces/{workspaceId}/webhooks	automation-controller	listWebhooks	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver
+covered	POST	/api/v1/workspaces/{workspaceId}/webhooks	automation-controller	createWebhook	AutomationAsyncApiTest#authenticatedAdminsCanRunAutomationWebhookEmailAndWorkerLifecycleAgainstLocalReceiver

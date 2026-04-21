@@ -1,5 +1,6 @@
 package com.strangequark.trascktest.api;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -9,6 +10,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.microsoft.playwright.APIRequestContext;
 import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.FilePayload;
+import com.microsoft.playwright.options.FormData;
 import com.strangequark.trascktest.config.TrasckTestConfig;
 import com.strangequark.trascktest.support.ApiCleanup;
 import com.strangequark.trascktest.support.ApiDiagnostics;
@@ -18,6 +21,7 @@ import com.strangequark.trascktest.support.JsonSupport;
 import com.strangequark.trascktest.support.RuntimeChecks;
 import com.strangequark.trascktest.support.TestWorkspace;
 import com.strangequark.trascktest.support.UniqueData;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -151,6 +155,37 @@ class WorkItemCollaborationApiTest {
             cleanup.delete(session, "/api/v1/work-items/" + primaryId + "/attachments/" + attachmentId);
             assertEquals("playwright-notes.txt", attachment.path("filename").asText());
             assertTrue(session.requireJson(session.get("/api/v1/work-items/" + primaryId + "/attachments"), 200).isArray());
+
+            byte[] uploadedBytes = ("Playwright attachment bytes " + suffix).getBytes(StandardCharsets.UTF_8);
+            APIResponse uploadResponse = session.postMultipart("/api/v1/work-items/" + primaryId + "/attachments/files",
+                    FormData.create()
+                            .set("visibility", "restricted")
+                            .set("file", new FilePayload("playwright-upload.txt", "text/plain", uploadedBytes)));
+            ApiDiagnostics.writeSnippet("work-item-attachment-file-upload", "POST work item attachment file", uploadResponse);
+            JsonNode uploadedAttachment = session.requireJson(uploadResponse, 201);
+            String uploadedAttachmentId = uploadedAttachment.path("id").asText();
+            cleanup.delete(session, "/api/v1/work-items/" + primaryId + "/attachments/" + uploadedAttachmentId);
+            assertEquals(uploadedBytes.length, uploadedAttachment.path("sizeBytes").asInt(), uploadedAttachment.toString());
+            APIResponse downloadResponse = session.get("/api/v1/work-items/" + primaryId + "/attachments/" + uploadedAttachmentId + "/download");
+            ApiDiagnostics.writeSnippet("work-item-attachment-file-download", "GET work item attachment file", downloadResponse);
+            assertEquals(200, downloadResponse.status(), downloadResponse.text());
+            assertArrayEquals(uploadedBytes, downloadResponse.body());
+
+            JsonNode workspaceLabel = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/labels", JsonSupport.object(
+                    "name", "playwright-label-" + suffix,
+                    "color", "#3366ff"
+            )), 201);
+            String labelId = workspaceLabel.path("id").asText();
+            cleanup.delete(session, "/api/v1/workspaces/" + workspace.workspaceId() + "/labels/" + labelId);
+            assertTrue(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/labels"), 200).isArray());
+            JsonNode attachedLabel = session.requireJson(session.post("/api/v1/work-items/" + primaryId + "/labels", JsonSupport.object(
+                    "labelId", labelId
+            )), 201);
+            cleanup.delete(session, "/api/v1/work-items/" + primaryId + "/labels/" + labelId);
+            assertEquals(labelId, attachedLabel.path("id").asText(), attachedLabel.toString());
+            assertTrue(session.requireJson(session.get("/api/v1/work-items/" + primaryId + "/labels"), 200).isArray());
+            assertEquals(204, session.delete("/api/v1/work-items/" + primaryId + "/labels/" + labelId).status());
+            assertEquals(204, session.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/labels/" + labelId).status());
 
             assertTrue(session.requireJson(session.get("/api/v1/work-items/" + primaryId + "/activity?limit=5"), 200).path("items").isArray());
             assertTrue(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/activity?limit=5"), 200).path("items").isArray());

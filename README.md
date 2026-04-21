@@ -12,8 +12,8 @@ Current starter coverage:
 - Backend API smoke test for `GET /api/v1/auth/csrf`.
 - Backend API smoke tests for setup endpoint reachability, unauthenticated current-user denial, optional login/current-user cookie and Bearer sessions, and local OpenAPI availability.
 - Optional first-run setup bootstrap coverage that creates a disposable local stack through `/api/v1/setup` and proves a second setup attempt is rejected.
-- Authenticated backend API coverage for workspace/project security policy, personal and service token scope behavior, system-admin/audit/export reads, configuration/custom-field/screen/reporting CRUD, work item collaboration/activity, team/planning/board/release/roadmap resources, notification preferences/defaults, dashboards, saved filters, saved views, favorites, and recent items when local credentials plus workspace/project IDs are configured or setup bootstrap is enabled against an empty stack.
-- Committed OpenAPI route coverage baseline at `src/test/resources/backend-route-coverage.tsv`, including `coverageOwner` for covered rows, plus generated route inventory output under `test-results/api/backend-route-inventory.tsv` so backend API gaps can be closed route by route.
+- Authenticated backend API coverage for workspace/project security policy, personal and service token scope behavior, system-admin/audit/export reads, configuration/custom-field/screen/reporting CRUD, work item collaboration/activity, attachment byte upload/download, workspace and work-item label cleanup, reporting history/snapshot reads and snapshot execution controls, team-scoped dashboard/filter/view/report-query lists, repository connections, invitations, workspace-admin user creation, team/planning/board/release/roadmap resources, notification preferences/defaults, dashboards, saved filters, saved views, favorites, and recent items when local credentials plus workspace/project IDs are configured or setup bootstrap is enabled against an empty stack.
+- Committed OpenAPI route coverage baseline at `src/test/resources/backend-route-coverage.tsv`, including `coverageOwner` for covered rows, plus generated route inventory output under `test-results/api/backend-route-inventory.tsv` so backend API gaps can be closed route by route. The current baseline tracks 212 covered backend routes, 3 ordinary planned fixture-gated routes, and 144 planned high-risk routes.
 - Optional sample-data fixture support that stays separate from first-run setup bootstrap.
 - Frontend browser smoke test for the route shell and core navigation.
 
@@ -55,13 +55,13 @@ Supported variables:
 
 Do not commit `.env`; use `.env.example` for safe defaults only.
 
-The authenticated smoke tests are skipped unless both login variables are set or `TRASCK_E2E_ALLOW_SETUP=true` can create a disposable first-run stack. Workspace/project API tests also require `TRASCK_E2E_WORKSPACE_ID` and `TRASCK_E2E_PROJECT_ID` unless setup bootstrap creates those IDs in the current run. Use a disposable local test user with the least permission needed for the scenario being exercised; current broad API coverage expects project/workspace admin permissions so it can create and clean up its own test resources through public APIs.
+The authenticated smoke tests are skipped unless both login variables are set or `TRASCK_E2E_ALLOW_SETUP=true` can create a disposable first-run stack. Workspace/project API tests also require `TRASCK_E2E_WORKSPACE_ID` and `TRASCK_E2E_PROJECT_ID` unless setup bootstrap creates those IDs in the current run. Use a disposable local test user with the least permission needed for the scenario being exercised; current broad API coverage expects project/workspace admin permissions so it can create and clean up its own test resources through public APIs where cleanup APIs exist.
 
 ## Local Stack
 
 Run the backend and frontend with their normal local settings, keeping the backend on port `6100` and the frontend on port `8080`. The smoke suite assumes the backend owns PostgreSQL, Redis, Maildev, and any other service dependencies; `trasck-test` only drives HTTP and browser behavior from outside the application.
 
-For deterministic local runs, start the stack from a known database state, create or reuse a disposable test user, set the optional login and workspace/project variables in `.env`, then run `mvn test` from this repository. For a brand-new disposable database, set `TRASCK_E2E_ALLOW_SETUP=true` instead; the suite will create a Playwright admin/workspace/project through `/api/v1/setup`, reuse those IDs in-memory for the same Maven run, and verify that a second setup call returns conflict. Setup bootstrap intentionally remains minimal. Broader browser workflow data is created only through the separate optional sample-data fixture when `TRASCK_E2E_SEED_SAMPLE_DATA=true` and a test calls that fixture. The API tests create uniquely named temporary resources and delete the resources they create through Trasck HTTP APIs; they do not use direct database access.
+For deterministic local runs, start the stack from a known database state, create or reuse a disposable test user, set the optional login and workspace/project variables in `.env`, then run `mvn test` from this repository. For a brand-new disposable database, set `TRASCK_E2E_ALLOW_SETUP=true` instead; the suite will create a Playwright admin/workspace/project through `/api/v1/setup`, reuse those IDs in-memory for the same Maven run, and verify that a second setup call returns conflict. Setup bootstrap intentionally remains minimal. Broader browser workflow data is created only through the separate optional sample-data fixture when `TRASCK_E2E_SEED_SAMPLE_DATA=true` and a test calls that fixture. The API tests create uniquely named temporary resources and delete the resources they create through Trasck HTTP APIs where public cleanup APIs exist; they do not use direct database access.
 
 ## Run Tests
 
@@ -93,7 +93,7 @@ Artifacts are written under `test-results/`:
 
 - `test-results/api`: response snippets with sensitive headers and token-shaped body fields redacted.
 - `test-results/api/backend-route-inventory.tsv`: generated OpenAPI route inventory with `covered`, `planned-high-risk`, and `planned` statuses.
-- `src/test/resources/backend-route-coverage.tsv`: committed coverage baseline. The OpenAPI route inventory test fails when a backend route is added without an explicit baseline status, and covered rows must name their owning Java Playwright test in `coverageOwner`.
+- `src/test/resources/backend-route-coverage.tsv`: committed coverage baseline. The OpenAPI route inventory test fails when a backend route is added without an explicit baseline status, and covered rows must name their owning Java Playwright test in `coverageOwner`. The current baseline tracks 212 covered backend routes, 3 ordinary planned fixture-gated routes, and 144 planned high-risk routes.
 - `test-results/screenshots`: browser screenshots captured by smoke tests.
 - `test-results/traces`: Playwright trace ZIP files for browser runs.
 - `test-results/report.html`: Extent report output when report listeners are enabled by future suites.

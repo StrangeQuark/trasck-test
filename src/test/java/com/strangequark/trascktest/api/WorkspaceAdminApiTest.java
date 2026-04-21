@@ -45,6 +45,10 @@ class WorkspaceAdminApiTest {
             ApiDiagnostics.writeSnippet("invitations-unauthenticated", "POST invitation without auth", invitations);
             assertTrue(invitations.status() == 401 || invitations.status() == 403, invitations.text());
 
+            APIResponse listInvitations = request.get("/api/v1/workspaces/" + workspace.workspaceId() + "/invitations");
+            ApiDiagnostics.writeSnippet("list-invitations-unauthenticated", "GET invitations without auth", listInvitations);
+            assertTrue(listInvitations.status() == 401 || listInvitations.status() == 403, listInvitations.text());
+
             APIResponse deleteInvitation = request.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/invitations/00000000-0000-0000-0000-000000000001");
             ApiDiagnostics.writeSnippet("delete-invitation-unauthenticated", "DELETE invitation without auth", deleteInvitation);
             assertTrue(deleteInvitation.status() == 401 || deleteInvitation.status() == 403, deleteInvitation.text());
@@ -52,6 +56,10 @@ class WorkspaceAdminApiTest {
             APIResponse users = request.post("/api/v1/workspaces/" + workspace.workspaceId() + "/users");
             ApiDiagnostics.writeSnippet("workspace-users-unauthenticated", "POST workspace user without auth", users);
             assertTrue(users.status() == 401 || users.status() == 403, users.text());
+
+            APIResponse listUsers = request.get("/api/v1/workspaces/" + workspace.workspaceId() + "/users");
+            ApiDiagnostics.writeSnippet("list-workspace-users-unauthenticated", "GET workspace users without auth", listUsers);
+            assertTrue(listUsers.status() == 401 || listUsers.status() == 403, listUsers.text());
 
             APIResponse deleteUser = request.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/users/00000000-0000-0000-0000-000000000001");
             ApiDiagnostics.writeSnippet("delete-workspace-user-unauthenticated", "DELETE workspace user without auth", deleteUser);
@@ -95,6 +103,12 @@ class WorkspaceAdminApiTest {
             String invitationId = invitation.path("id").asText();
             cleanup.delete(session, "/api/v1/workspaces/" + workspace.workspaceId() + "/invitations/" + invitationId);
             assertFalse(invitation.path("token").asText().isBlank(), invitation.toString());
+            JsonNode pendingInvitations = session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/invitations"), 200);
+            JsonNode listedInvitation = findByField(pendingInvitations, "id", invitationId);
+            assertEquals("playwright-invite-" + suffix + "@example.test", listedInvitation.path("email").asText(), listedInvitation.toString());
+            assertEquals("pending", listedInvitation.path("status").asText(), listedInvitation.toString());
+            assertFalse(listedInvitation.has("token"), listedInvitation.toString());
+            assertFalse(listedInvitation.has("tokenHash"), listedInvitation.toString());
             assertEquals(204, session.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/invitations/" + invitationId).status());
 
             APIRequestContext rawRequest = ApiRequestFactory.backend(playwright, config);
@@ -122,6 +136,11 @@ class WorkspaceAdminApiTest {
             String userId = user.path("id").asText();
             cleanup.delete(session, "/api/v1/workspaces/" + workspace.workspaceId() + "/users/" + userId);
             assertTrue(user.path("emailVerified").asBoolean(), user.toString());
+            JsonNode activeUsers = session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/users"), 200);
+            JsonNode listedUser = findByField(activeUsers, "userId", userId);
+            assertEquals("playwright-user-" + suffix + "@example.test", listedUser.path("email").asText(), listedUser.toString());
+            assertEquals("active", listedUser.path("status").asText(), listedUser.toString());
+            assertFalse(listedUser.has("passwordHash"), listedUser.toString());
             assertEquals(204, session.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/users/" + userId).status());
 
             APIRequestContext removedUserRequest = ApiRequestFactory.backend(playwright, config);
@@ -136,5 +155,14 @@ class WorkspaceAdminApiTest {
                 removedUserRequest.dispose();
             }
         }
+    }
+
+    private static JsonNode findByField(JsonNode items, String field, String value) {
+        for (JsonNode item : items) {
+            if (value.equals(item.path(field).asText())) {
+                return item;
+            }
+        }
+        throw new AssertionError("Expected " + field + "=" + value + " in " + items);
     }
 }

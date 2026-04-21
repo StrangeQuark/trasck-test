@@ -16,6 +16,7 @@ public final class RuntimeChecks {
     public static void requireHttpService(String serviceName, URI baseUrl, String path, Duration timeout) {
         URI target = baseUrl.resolve(path.startsWith("/") ? path : "/" + path);
         HttpClient client = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(REQUEST_TIMEOUT)
                 .build();
         long deadline = System.nanoTime() + timeout.toNanos();

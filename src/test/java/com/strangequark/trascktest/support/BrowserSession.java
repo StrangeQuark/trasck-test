@@ -35,7 +35,7 @@ public final class BrowserSession implements AutoCloseable {
         BrowserSession session = new BrowserSession(testName, context, page);
         page.onConsoleMessage(message -> {
             if ("error".equals(message.type())) {
-                session.consoleErrors.add(message.text());
+                session.consoleErrors.add(message.text() + " at " + message.location());
             }
         });
         page.onPageError(error -> session.consoleErrors.add(String.valueOf(error)));

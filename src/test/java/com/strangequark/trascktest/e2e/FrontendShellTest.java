@@ -34,6 +34,7 @@ class FrontendShellTest {
             assertThat(page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Auth"))).isVisible();
             assertThat(page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Work"))).isVisible();
             assertThat(page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("System"))).isVisible();
+            assertThat(page.getByRole(AriaRole.LINK, new Page.GetByRoleOptions().setName("Project"))).isVisible();
             session.screenshot();
             session.assertNoConsoleErrors();
         }

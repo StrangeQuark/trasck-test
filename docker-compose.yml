@@ -1,11 +1,14 @@
 services:
-  trasck-test-service:
+  trasck-test:
     build: .
-    networks:
-      - trasck-network
-    container_name: trasck-test-service
+    container_name: trasck-test
+    environment:
+      TRASCK_BACKEND_BASE_URL: ${TRASCK_BACKEND_BASE_URL:-http://host.docker.internal:6100}
+      TRASCK_FRONTEND_BASE_URL: ${TRASCK_FRONTEND_BASE_URL:-http://host.docker.internal:8080}
+      TRASCK_E2E_BROWSER: ${TRASCK_E2E_BROWSER:-chromium}
+      TRASCK_E2E_HEADLESS: ${TRASCK_E2E_HEADLESS:-true}
+      TRASCK_E2E_TIMEOUT_MS: ${TRASCK_E2E_TIMEOUT_MS:-30000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
-      - ./test-results:/trascktestservice/test-results
-networks:
-  trasck-network:
-    external: true
+      - ./test-results:/trasck-test/test-results

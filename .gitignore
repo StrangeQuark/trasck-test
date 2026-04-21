@@ -1,6 +1,11 @@
 HELP.md
+.env
+!.env.example
 target/
 test-results/
+playwright-report/
+traces/
+screenshots/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

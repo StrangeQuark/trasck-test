@@ -137,6 +137,9 @@ class FrontendShellTest {
             assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Public Project Preview"))).isVisible();
             assertThat(page.getByText("Browser Public Project").first()).isVisible();
             assertThat(page.getByText("Browser public story").first()).isVisible();
+            page.getByText("Browser public story").click();
+            assertThat(page.getByText("Browser public collaboration note").first()).isVisible();
+            assertThat(page.getByText("browser-public-notes.txt").first()).isVisible();
 
             session.screenshot();
             session.assertNoConsoleErrors();
@@ -326,12 +329,13 @@ class FrontendShellTest {
     }
 
     private static void mockPublicProjectWorkItems(Page page, String projectId, AtomicBoolean publicEnabled) {
+        String workItemId = "00000000-0000-0000-0000-000000000601";
         page.route(Pattern.compile(".*/api/v1/public/projects/" + projectId + "/work-items(\\?.*)?$"), route -> {
             if (publicEnabled.get()) {
                 fulfillJson(route, 200, """
                         {
                           "items": [{
-                            "id": "00000000-0000-0000-0000-000000000601",
+                            "id": "%s",
                             "projectId": "%s",
                             "key": "BPP-1",
                             "title": "Browser public story",
@@ -341,7 +345,7 @@ class FrontendShellTest {
                           "hasMore": false,
                           "limit": 25
                         }
-                        """.formatted(projectId));
+                        """.formatted(workItemId, projectId));
                 return;
             }
             fulfillJson(route, 404, """
@@ -350,18 +354,56 @@ class FrontendShellTest {
                     }
                     """);
         });
-        page.route("**/api/v1/public/projects/" + projectId + "/work-items/*", route -> {
+        page.route("**/api/v1/public/projects/" + projectId + "/work-items/" + workItemId + "/comments", route -> {
+            if (publicEnabled.get()) {
+                fulfillJson(route, 200, """
+                        [{
+                          "id": "00000000-0000-0000-0000-000000000611",
+                          "workItemId": "%s",
+                          "bodyMarkdown": "Browser public collaboration note",
+                          "createdAt": "2026-04-21T20:00:00Z"
+                        }]
+                        """.formatted(workItemId));
+                return;
+            }
+            fulfillJson(route, 404, """
+                    {
+                      "message": "Public project not found"
+                    }
+                    """);
+        });
+        page.route("**/api/v1/public/projects/" + projectId + "/work-items/" + workItemId + "/attachments", route -> {
+            if (publicEnabled.get()) {
+                fulfillJson(route, 200, """
+                        [{
+                          "id": "00000000-0000-0000-0000-000000000612",
+                          "workItemId": "%s",
+                          "filename": "browser-public-notes.txt",
+                          "contentType": "text/plain",
+                          "sizeBytes": 42,
+                          "downloadUrl": "/api/v1/public/projects/%s/work-items/%s/attachments/00000000-0000-0000-0000-000000000612/download?token=browser-test"
+                        }]
+                        """.formatted(workItemId, projectId, workItemId));
+                return;
+            }
+            fulfillJson(route, 404, """
+                    {
+                      "message": "Public project not found"
+                    }
+                    """);
+        });
+        page.route(Pattern.compile(".*/api/v1/public/projects/" + projectId + "/work-items/" + workItemId + "$"), route -> {
             if (publicEnabled.get()) {
                 fulfillJson(route, 200, """
                         {
-                          "id": "00000000-0000-0000-0000-000000000601",
+                          "id": "%s",
                           "projectId": "%s",
                           "key": "BPP-1",
                           "title": "Browser public story",
                           "descriptionMarkdown": "Browser public work item preview",
                           "visibility": "inherited"
                         }
-                        """.formatted(projectId));
+                        """.formatted(workItemId, projectId));
                 return;
             }
             fulfillJson(route, 404, """

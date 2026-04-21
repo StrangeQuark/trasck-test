@@ -37,6 +37,15 @@ class DashboardSearchPersonalizationApiTest {
             TestWorkspace workspace = TestWorkspace.require(playwright, config);
             String suffix = UniqueData.suffix();
 
+            JsonNode team = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/teams", JsonSupport.object(
+                    "name", "Playwright Search Team " + suffix,
+                    "description", "Created for team-scoped dashboard/search coverage",
+                    "leadUserId", session.userId(),
+                    "defaultCapacity", 80
+            )), 201);
+            String teamId = team.path("id").asText();
+            cleanup.delete(session, "/api/v1/teams/" + teamId);
+
             JsonNode savedFilter = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/saved-filters", JsonSupport.object(
                     "name", "Playwright Filter " + suffix,
                     "visibility", "project",
@@ -56,6 +65,16 @@ class DashboardSearchPersonalizationApiTest {
             JsonNode executed = session.requireJson(session.get("/api/v1/saved-filters/" + savedFilterId + "/work-items?limit=5"), 200);
             assertTrue(executed.path("items").isArray(), executed.toString());
 
+            JsonNode teamSavedFilter = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/saved-filters", JsonSupport.object(
+                    "name", "Playwright Team Filter " + suffix,
+                    "visibility", "team",
+                    "teamId", teamId,
+                    "query", Map.of("projectId", workspace.projectId(), "entityType", "work_item")
+            )), 201);
+            cleanup.delete(session, "/api/v1/saved-filters/" + teamSavedFilter.path("id").asText());
+            assertEquals(teamId, teamSavedFilter.path("teamId").asText(), teamSavedFilter.toString());
+            assertTrue(session.requireJson(session.get("/api/v1/teams/" + teamId + "/saved-filters"), 200).isArray());
+
             JsonNode dashboard = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/dashboards", JsonSupport.object(
                     "name", "Playwright Dashboard " + suffix,
                     "visibility", "project",
@@ -72,6 +91,16 @@ class DashboardSearchPersonalizationApiTest {
             assertEquals("Playwright Dashboard Updated " + suffix, updatedDashboard.path("name").asText(), updatedDashboard.toString());
             assertTrue(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/dashboards"), 200).isArray());
             assertTrue(session.requireJson(session.get("/api/v1/projects/" + workspace.projectId() + "/dashboards"), 200).isArray());
+
+            JsonNode teamDashboard = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/dashboards", JsonSupport.object(
+                    "name", "Playwright Team Dashboard " + suffix,
+                    "visibility", "team",
+                    "teamId", teamId,
+                    "layout", Map.of("columns", 12)
+            )), 201);
+            cleanup.delete(session, "/api/v1/dashboards/" + teamDashboard.path("id").asText());
+            assertEquals(teamId, teamDashboard.path("teamId").asText(), teamDashboard.toString());
+            assertTrue(session.requireJson(session.get("/api/v1/teams/" + teamId + "/dashboards"), 200).isArray());
 
             APIResponse widgetResponse = session.post("/api/v1/dashboards/" + dashboardId + "/widgets", JsonSupport.object(
                     "widgetType", "custom_summary",
@@ -111,6 +140,32 @@ class DashboardSearchPersonalizationApiTest {
             assertEquals("Playwright View Updated " + suffix, updatedView.path("name").asText(), updatedView.toString());
             assertTrue(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/personalization/views"), 200).isArray());
             assertTrue(session.requireJson(session.get("/api/v1/projects/" + workspace.projectId() + "/personalization/views"), 200).isArray());
+
+            JsonNode teamSavedView = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/personalization/views", JsonSupport.object(
+                    "name", "Playwright Team View " + suffix,
+                    "viewType", "work_item_list",
+                    "config", Map.of("savedFilterId", teamSavedFilter.path("id").asText()),
+                    "visibility", "team",
+                    "teamId", teamId
+            )), 201);
+            cleanup.delete(session, "/api/v1/personalization/views/" + teamSavedView.path("id").asText());
+            assertEquals(teamId, teamSavedView.path("teamId").asText(), teamSavedView.toString());
+            assertTrue(session.requireJson(session.get("/api/v1/teams/" + teamId + "/personalization/views"), 200).isArray());
+
+            JsonNode teamReportQuery = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/report-query-catalog", JsonSupport.object(
+                    "queryKey", "pw_team_summary_" + suffix,
+                    "name", "Playwright Team Summary " + suffix,
+                    "description", "Created by Java Playwright team-scoped search coverage",
+                    "queryType", "project_dashboard_summary",
+                    "queryConfig", Map.of("projectId", workspace.projectId(), "teamId", teamId),
+                    "parametersSchema", Map.of("type", "object", "additionalProperties", false),
+                    "visibility", "team",
+                    "teamId", teamId,
+                    "enabled", true
+            )), 201);
+            cleanup.delete(session, "/api/v1/report-query-catalog/" + teamReportQuery.path("id").asText());
+            assertEquals(teamId, teamReportQuery.path("teamId").asText(), teamReportQuery.toString());
+            assertTrue(session.requireJson(session.get("/api/v1/teams/" + teamId + "/report-query-catalog"), 200).isArray());
 
             JsonNode favorite = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/personalization/favorites", JsonSupport.object(
                     "entityType", "dashboard",

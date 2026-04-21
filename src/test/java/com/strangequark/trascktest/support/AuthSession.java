@@ -7,6 +7,7 @@ import com.microsoft.playwright.APIRequest;
 import com.microsoft.playwright.APIRequestContext;
 import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.FormData;
 import com.microsoft.playwright.options.RequestOptions;
 import com.strangequark.trascktest.config.TrasckTestConfig;
 import java.util.Map;
@@ -77,6 +78,10 @@ public final class AuthSession implements AutoCloseable {
 
     public APIResponse post(String path, Object body) {
         return request.post(path, RequestOptions.create().setData(body));
+    }
+
+    public APIResponse postMultipart(String path, FormData form) {
+        return request.post(path, RequestOptions.create().setMultipart(form));
     }
 
     public APIResponse patch(String path, Object body) {

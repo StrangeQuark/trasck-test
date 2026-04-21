@@ -134,7 +134,7 @@ covered	DELETE	/api/v1/notification-defaults/{preferenceId}	notification-control
 covered	PATCH	/api/v1/notification-defaults/{preferenceId}	notification-controller	updateDefaultPreference	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
 covered	DELETE	/api/v1/notification-preferences/{preferenceId}	notification-controller	deletePreference	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
 covered	PATCH	/api/v1/notification-preferences/{preferenceId}	notification-controller	updatePreference	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
-planned	PATCH	/api/v1/notifications/{notificationId}/read	notification-controller	markRead
+covered	PATCH	/api/v1/notifications/{notificationId}/read	notification-controller	markRead	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
 covered	DELETE	/api/v1/personalization/favorites/{favoriteId}	personalization-controller	deleteFavorite	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 covered	DELETE	/api/v1/personalization/recent-items/{recentItemId}	personalization-controller	deleteRecentItem	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 covered	DELETE	/api/v1/personalization/views/{viewId}	personalization-controller	deleteView	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
@@ -158,6 +158,12 @@ covered	DELETE	/api/v1/projects/{projectId}/teams/{teamId}	team-controller	remov
 covered	PUT	/api/v1/projects/{projectId}/teams/{teamId}	team-controller	assignProjectTeam	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
 covered	GET	/api/v1/projects/{projectId}/work-items	work-item-controller	listByProject	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
 covered	POST	/api/v1/projects/{projectId}/work-items	work-item-controller	create_3	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	DELETE	/api/v1/programs/{programId}	program-controller	archiveProgram	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
+covered	GET	/api/v1/programs/{programId}	program-controller	getProgram	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
+covered	PATCH	/api/v1/programs/{programId}	program-controller	updateProgram	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
+covered	GET	/api/v1/programs/{programId}/projects	program-controller	listProgramProjects	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
+covered	DELETE	/api/v1/programs/{programId}/projects/{projectId}	program-controller	removeProgramProject	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
+covered	PUT	/api/v1/programs/{programId}/projects/{projectId}	program-controller	assignProgramProject	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
 covered	GET	/api/v1/public/projects/{projectId}	public-project-controller	getPublicProject	SecurityPolicyApiTest#authenticatedWorkspaceAndProjectPoliciesExposeEffectiveLimitsAndRejectInvalidUpdates
 covered	DELETE	/api/v1/releases/{releaseId}	release-roadmap-controller	deleteRelease	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
 covered	GET	/api/v1/releases/{releaseId}	release-roadmap-controller	getRelease	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
@@ -169,7 +175,7 @@ covered	DELETE	/api/v1/report-query-catalog/{queryId}	report-query-catalog-contr
 covered	GET	/api/v1/report-query-catalog/{queryId}	report-query-catalog-controller	get_2	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	PATCH	/api/v1/report-query-catalog/{queryId}	report-query-catalog-controller	update_2	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	GET	/api/v1/reports/iterations/{iterationId}/report	reporting-controller	iterationReport	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
-planned	GET	/api/v1/reports/programs/{programId}/dashboard-summary	reporting-controller	programDashboardSummary
+covered	GET	/api/v1/reports/programs/{programId}/dashboard-summary	reporting-controller	programDashboardSummary	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
 covered	GET	/api/v1/reports/projects/{projectId}/dashboard-summary	reporting-controller	projectDashboardSummary	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
 planned-high-risk	GET	/api/v1/reports/projects/{projectId}/imports/completions	reporting-controller	projectImportCompletions
 covered	GET	/api/v1/reports/projects/{projectId}/snapshots	reporting-controller	projectSnapshots	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
@@ -320,6 +326,7 @@ planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/import-settings	import-jo
 planned-high-risk	PATCH	/api/v1/workspaces/{workspaceId}/import-settings	import-job-controller	updateImportSettings
 planned-high-risk	GET	/api/v1/workspaces/{workspaceId}/import-transform-presets	import-job-controller	listTransformPresets
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/import-transform-presets	import-job-controller	createTransformPreset
+covered	GET	/api/v1/workspaces/{workspaceId}/invitations	auth-controller	listInvitations	WorkspaceAdminApiTest#authenticatedAdminsCanManageRepositoryConnectionsInvitationsAndWorkspaceUsers
 covered	POST	/api/v1/workspaces/{workspaceId}/invitations	auth-controller	invite	WorkspaceAdminApiTest#authenticatedAdminsCanManageRepositoryConnectionsInvitationsAndWorkspaceUsers
 covered	DELETE	/api/v1/workspaces/{workspaceId}/invitations/{invitationId}	auth-controller	cancelInvitation	WorkspaceAdminApiTest#authenticatedAdminsCanManageRepositoryConnectionsInvitationsAndWorkspaceUsers
 covered	GET	/api/v1/workspaces/{workspaceId}/labels	work-item-controller	listWorkspaceLabels	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
@@ -330,6 +337,7 @@ covered	POST	/api/v1/workspaces/{workspaceId}/notification-defaults	notification
 covered	GET	/api/v1/workspaces/{workspaceId}/notification-preferences	notification-controller	listPreferences	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
 covered	POST	/api/v1/workspaces/{workspaceId}/notification-preferences	notification-controller	upsertPreference	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
 covered	GET	/api/v1/workspaces/{workspaceId}/notifications	notification-controller	listNotifications	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
+covered	POST	/api/v1/workspaces/{workspaceId}/notifications	notification-controller	createNotification	NotificationPreferencesApiTest#authenticatedAdminsCanManageNotificationPreferencesAndDefaults
 covered	GET	/api/v1/workspaces/{workspaceId}/personalization/favorites	personalization-controller	listFavorites	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 covered	POST	/api/v1/workspaces/{workspaceId}/personalization/favorites	personalization-controller	addFavorite	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 covered	GET	/api/v1/workspaces/{workspaceId}/personalization/recent-items	personalization-controller	listRecentItems	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
@@ -337,6 +345,8 @@ covered	POST	/api/v1/workspaces/{workspaceId}/personalization/recent-items	perso
 covered	GET	/api/v1/workspaces/{workspaceId}/personalization/views	personalization-controller	listViews	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 covered	POST	/api/v1/workspaces/{workspaceId}/personalization/views	personalization-controller	createView	DashboardSearchPersonalizationApiTest#authenticatedUsersCanCreateRenderAndCleanUpDashboardSearchAndPersonalizationResources
 covered	GET	/api/v1/workspaces/{workspaceId}/projects/{projectId}/activity	activity-controller	projectActivity	WorkItemCollaborationApiTest#authenticatedUsersCanCreateUpdateCollaborateAndCleanUpWorkItems
+covered	GET	/api/v1/workspaces/{workspaceId}/programs	program-controller	listPrograms	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
+covered	POST	/api/v1/workspaces/{workspaceId}/programs	program-controller	createProgram	ReportingReadApiTest#authenticatedUsersCanRunAndReadReportingSnapshotsAndSummaries
 covered	GET	/api/v1/workspaces/{workspaceId}/report-query-catalog	report-query-catalog-controller	list_1	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	POST	/api/v1/workspaces/{workspaceId}/report-query-catalog	report-query-catalog-controller	create_1	ConfigurationReportingApiTest#authenticatedAdminsCanManageCustomFieldsScreensAndReportCatalogEntries
 covered	GET	/api/v1/workspaces/{workspaceId}/repository-connections	repository-connection-controller	listRepositoryConnections	WorkspaceAdminApiTest#authenticatedAdminsCanManageRepositoryConnectionsInvitationsAndWorkspaceUsers
@@ -355,6 +365,7 @@ covered	POST	/api/v1/workspaces/{workspaceId}/service-tokens	auth-controller	cre
 covered	DELETE	/api/v1/workspaces/{workspaceId}/service-tokens/{tokenId}	auth-controller	revokeServiceToken	ApiTokenSecurityApiTest#serviceTokensHideRawValuesOnListHonorScopesAndStopWorkingAfterRevocation
 covered	GET	/api/v1/workspaces/{workspaceId}/teams	team-controller	listTeams	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
 covered	POST	/api/v1/workspaces/{workspaceId}/teams	team-controller	createTeam	PlanningBoardApiTest#authenticatedUsersCanCreateListAndCleanUpPlanningAndBoardResources
+covered	GET	/api/v1/workspaces/{workspaceId}/users	auth-controller	listWorkspaceUsers	WorkspaceAdminApiTest#authenticatedAdminsCanManageRepositoryConnectionsInvitationsAndWorkspaceUsers
 covered	POST	/api/v1/workspaces/{workspaceId}/users	auth-controller	createUser	WorkspaceAdminApiTest#authenticatedAdminsCanManageRepositoryConnectionsInvitationsAndWorkspaceUsers
 covered	DELETE	/api/v1/workspaces/{workspaceId}/users/{userId}	auth-controller	removeWorkspaceUser	WorkspaceAdminApiTest#authenticatedAdminsCanManageRepositoryConnectionsInvitationsAndWorkspaceUsers
 planned-high-risk	POST	/api/v1/workspaces/{workspaceId}/webhook-deliveries/process	automation-controller	processWebhookDeliveries

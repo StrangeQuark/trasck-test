@@ -207,7 +207,7 @@ class ConfigurationReportingApiTest {
                 "title", title,
                 "reporterId", session.userId(),
                 "descriptionMarkdown", "Created by configuration/reporting Playwright API coverage.",
-                "visibility", "workspace"
+                "visibility", "inherited"
         ));
         ApiDiagnostics.writeSnippet("configuration-reporting-work-item-create", "POST project work item", response);
         return session.requireJson(response, 201);

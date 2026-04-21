@@ -29,7 +29,7 @@ public final class SampleDataFixture {
                 "title", "Sample browser workflow story " + suffix,
                 "reporterId", session.userId(),
                 "descriptionMarkdown", "Created by optional Java Playwright sample-data fixture.",
-                "visibility", "workspace"
+                "visibility", "inherited"
         ));
         ApiDiagnostics.writeSnippet("sample-data-work-item", "POST sample fixture work item", response);
         return session.requireJson(response, 201);

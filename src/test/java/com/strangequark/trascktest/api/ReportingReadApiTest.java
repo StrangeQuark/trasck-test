@@ -100,6 +100,36 @@ class ReportingReadApiTest {
             JsonNode workspaceSummary = session.requireJson(session.get("/api/v1/reports/workspaces/" + workspace.workspaceId() + "/dashboard-summary?projectIds=" + workspace.projectId()), 200);
             assertEquals(workspace.workspaceId(), workspaceSummary.path("workspaceId").asText(), workspaceSummary.toString());
 
+            JsonNode program = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/programs", JsonSupport.object(
+                    "name", "Playwright Program " + suffix,
+                    "description", "Created by reporting Playwright API coverage",
+                    "roadmapConfig", Map.of("view", "timeline", "horizon", "quarter"),
+                    "reportConfig", Map.of("defaultWindow", "last_30_days", "showImportCompletion", true)
+            )), 201);
+            String programId = program.path("id").asText();
+            cleanup.delete(session, "/api/v1/programs/" + programId);
+            assertEquals("timeline", program.path("roadmapConfig").path("view").asText(), program.toString());
+            assertTrue(session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/programs"), 200).isArray());
+            JsonNode updatedProgram = session.requireJson(session.patch("/api/v1/programs/" + programId, JsonSupport.object(
+                    "description", "Updated by reporting Playwright API coverage",
+                    "reportConfig", Map.of("defaultWindow", "current_quarter", "showImportCompletion", true)
+            )), 200);
+            assertEquals("current_quarter", updatedProgram.path("reportConfig").path("defaultWindow").asText(), updatedProgram.toString());
+            JsonNode fetchedProgram = session.requireJson(session.get("/api/v1/programs/" + programId), 200);
+            assertEquals(programId, fetchedProgram.path("id").asText(), fetchedProgram.toString());
+            JsonNode assignedProject = session.requireJson(session.put("/api/v1/programs/" + programId + "/projects/" + workspace.projectId(), JsonSupport.object(
+                    "position", 1
+            )), 200);
+            cleanup.delete(session, "/api/v1/programs/" + programId + "/projects/" + workspace.projectId());
+            assertEquals(workspace.projectId(), assignedProject.path("projectId").asText(), assignedProject.toString());
+            JsonNode programProjects = session.requireJson(session.get("/api/v1/programs/" + programId + "/projects"), 200);
+            assertEquals(1, programProjects.size(), programProjects.toString());
+            JsonNode programSummary = session.requireJson(session.get("/api/v1/reports/programs/" + programId + "/dashboard-summary"), 200);
+            assertEquals("program", programSummary.path("scope").path("scopeType").asText(), programSummary.toString());
+            assertEquals(programId, programSummary.path("scope").path("programId").asText(), programSummary.toString());
+            assertEquals(204, session.delete("/api/v1/programs/" + programId + "/projects/" + workspace.projectId()).status());
+            assertEquals(204, session.delete("/api/v1/programs/" + programId).status());
+
             JsonNode snapshotRun = session.requireJson(session.post("/api/v1/reports/workspaces/" + workspace.workspaceId() + "/snapshots/run?date=" + SNAPSHOT_DATE, Map.of()), 200);
             assertEquals(SNAPSHOT_DATE, snapshotRun.path("snapshotDate").asText(), snapshotRun.toString());
             JsonNode backfill = session.requireJson(session.post("/api/v1/reports/workspaces/" + workspace.workspaceId() + "/snapshots/backfill?fromDate=" + SNAPSHOT_DATE + "&toDate=" + SNAPSHOT_DATE, Map.of()), 200);
@@ -124,7 +154,7 @@ class ReportingReadApiTest {
                 "title", title,
                 "reporterId", session.userId(),
                 "descriptionMarkdown", "Created by reporting Playwright API coverage.",
-                "visibility", "workspace"
+                "visibility", "inherited"
         ));
         ApiDiagnostics.writeSnippet("reporting-work-item-create", "POST project work item", response);
         return session.requireJson(response, 201);

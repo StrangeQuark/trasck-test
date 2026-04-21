@@ -199,7 +199,7 @@ class WorkItemCollaborationApiTest {
                 "title", title,
                 "reporterId", session.userId(),
                 "descriptionMarkdown", "Created by the external Java Playwright API suite.",
-                "visibility", "workspace"
+                "visibility", "inherited"
         ));
         ApiDiagnostics.writeSnippet("work-item-create-" + UniqueData.suffix(), "POST project work item", response);
         return session.requireJson(response, 201);

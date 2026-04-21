@@ -20,6 +20,8 @@ import com.strangequark.trascktest.support.RuntimeChecks;
 import com.strangequark.trascktest.support.TestWorkspace;
 import com.strangequark.trascktest.support.UniqueData;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -93,6 +95,82 @@ class WorkspaceAdminApiTest {
             assertFalse(memberRoleId.isBlank(), workspaceRoles.toString());
             JsonNode projectRoles = session.requireJson(session.get("/api/v1/projects/" + workspace.projectId() + "/roles"), 200);
             assertEquals("project", findByField(projectRoles, "key", "project_admin").path("scope").asText(), projectRoles.toString());
+
+            JsonNode workspacePermissions = session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/roles/permissions"), 200);
+            assertTrue(containsPermission(workspacePermissions, "work_item.read"), workspacePermissions.toString());
+            JsonNode managedWorkspaceRole = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/roles", JsonSupport.object(
+                    "key", "playwright_workspace_role_" + suffix,
+                    "name", "Playwright Workspace Role " + suffix,
+                    "description", "Temporary workspace role for Java Playwright coverage",
+                    "permissionKeys", List.of("workspace.read", "work_item.read")
+            )), 201);
+            String managedWorkspaceRoleId = managedWorkspaceRole.path("id").asText();
+            cleanup.delete(session, "/api/v1/workspaces/" + workspace.workspaceId() + "/roles/" + managedWorkspaceRoleId);
+            assertEquals("workspace", managedWorkspaceRole.path("scope").asText(), managedWorkspaceRole.toString());
+            JsonNode workspaceRoleDetail = session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/roles/" + managedWorkspaceRoleId), 200);
+            assertTrue(permissionKeys(workspaceRoleDetail).contains("work_item.read"), workspaceRoleDetail.toString());
+            JsonNode renamedWorkspaceRole = session.requireJson(session.patch("/api/v1/workspaces/" + workspace.workspaceId() + "/roles/" + managedWorkspaceRoleId, JsonSupport.object(
+                    "name", "Renamed Workspace Role " + suffix,
+                    "description", "Renamed through Java Playwright coverage"
+            )), 200);
+            assertEquals("Renamed Workspace Role " + suffix, renamedWorkspaceRole.path("name").asText(), renamedWorkspaceRole.toString());
+            List<String> reducedWorkspacePermissions = withoutPermission(workspaceRoleDetail, "work_item.read");
+            JsonNode workspaceRolePreview = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/roles/" + managedWorkspaceRoleId + "/permission-preview", JsonSupport.object(
+                    "permissionKeys", reducedWorkspacePermissions
+            )), 200);
+            assertTrue(workspaceRolePreview.path("removedPermissionKeys").toString().contains("work_item.read"), workspaceRolePreview.toString());
+            APIResponse unconfirmedWorkspaceUpdate = session.put("/api/v1/workspaces/" + workspace.workspaceId() + "/roles/" + managedWorkspaceRoleId + "/permissions", JsonSupport.object(
+                    "permissionKeys", reducedWorkspacePermissions,
+                    "confirmed", false,
+                    "previewToken", workspaceRolePreview.path("previewToken").asText()
+            ));
+            ApiDiagnostics.writeSnippet("workspace-role-permission-unconfirmed", "PUT workspace role permissions without confirmation", unconfirmedWorkspaceUpdate);
+            assertEquals(409, unconfirmedWorkspaceUpdate.status(), unconfirmedWorkspaceUpdate.text());
+            JsonNode updatedWorkspaceRole = session.requireJson(session.put("/api/v1/workspaces/" + workspace.workspaceId() + "/roles/" + managedWorkspaceRoleId + "/permissions", JsonSupport.object(
+                    "permissionKeys", reducedWorkspacePermissions,
+                    "confirmed", true,
+                    "previewToken", workspaceRolePreview.path("previewToken").asText()
+            )), 200);
+            assertFalse(permissionKeys(updatedWorkspaceRole).contains("work_item.read"), updatedWorkspaceRole.toString());
+            JsonNode workspaceRoleVersions = session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/roles/" + managedWorkspaceRoleId + "/versions"), 200);
+            JsonNode workspaceCreatedVersion = findByField(workspaceRoleVersions, "changeType", "created");
+            JsonNode rolledBackWorkspaceRole = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/roles/" + managedWorkspaceRoleId + "/versions/" + workspaceCreatedVersion.path("id").asText() + "/rollback", Map.of()), 200);
+            assertTrue(permissionKeys(rolledBackWorkspaceRole).contains("work_item.read"), rolledBackWorkspaceRole.toString());
+            assertEquals(204, session.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/roles/" + managedWorkspaceRoleId).status());
+
+            JsonNode projectPermissions = session.requireJson(session.get("/api/v1/projects/" + workspace.projectId() + "/roles/permissions"), 200);
+            assertTrue(containsPermission(projectPermissions, "project.read"), projectPermissions.toString());
+            JsonNode managedProjectRole = session.requireJson(session.post("/api/v1/projects/" + workspace.projectId() + "/roles", JsonSupport.object(
+                    "key", "playwright_project_role_" + suffix,
+                    "name", "Playwright Project Role " + suffix,
+                    "description", "Temporary project role for Java Playwright coverage",
+                    "permissionKeys", List.of("project.read", "work_item.read")
+            )), 201);
+            String managedProjectRoleId = managedProjectRole.path("id").asText();
+            cleanup.delete(session, "/api/v1/projects/" + workspace.projectId() + "/roles/" + managedProjectRoleId);
+            assertEquals("project", managedProjectRole.path("scope").asText(), managedProjectRole.toString());
+            JsonNode projectRoleDetail = session.requireJson(session.get("/api/v1/projects/" + workspace.projectId() + "/roles/" + managedProjectRoleId), 200);
+            assertTrue(permissionKeys(projectRoleDetail).contains("work_item.read"), projectRoleDetail.toString());
+            JsonNode renamedProjectRole = session.requireJson(session.patch("/api/v1/projects/" + workspace.projectId() + "/roles/" + managedProjectRoleId, JsonSupport.object(
+                    "name", "Renamed Project Role " + suffix,
+                    "description", "Renamed through Java Playwright coverage"
+            )), 200);
+            assertEquals("Renamed Project Role " + suffix, renamedProjectRole.path("name").asText(), renamedProjectRole.toString());
+            List<String> reducedProjectPermissions = withoutPermission(projectRoleDetail, "work_item.read");
+            JsonNode projectRolePreview = session.requireJson(session.post("/api/v1/projects/" + workspace.projectId() + "/roles/" + managedProjectRoleId + "/permission-preview", JsonSupport.object(
+                    "permissionKeys", reducedProjectPermissions
+            )), 200);
+            JsonNode updatedProjectRole = session.requireJson(session.put("/api/v1/projects/" + workspace.projectId() + "/roles/" + managedProjectRoleId + "/permissions", JsonSupport.object(
+                    "permissionKeys", reducedProjectPermissions,
+                    "confirmed", true,
+                    "previewToken", projectRolePreview.path("previewToken").asText()
+            )), 200);
+            assertFalse(permissionKeys(updatedProjectRole).contains("work_item.read"), updatedProjectRole.toString());
+            JsonNode projectRoleVersions = session.requireJson(session.get("/api/v1/projects/" + workspace.projectId() + "/roles/" + managedProjectRoleId + "/versions"), 200);
+            JsonNode projectCreatedVersion = findByField(projectRoleVersions, "changeType", "created");
+            JsonNode rolledBackProjectRole = session.requireJson(session.post("/api/v1/projects/" + workspace.projectId() + "/roles/" + managedProjectRoleId + "/versions/" + projectCreatedVersion.path("id").asText() + "/rollback", Map.of()), 200);
+            assertTrue(permissionKeys(rolledBackProjectRole).contains("work_item.read"), rolledBackProjectRole.toString());
+            assertEquals(204, session.delete("/api/v1/projects/" + workspace.projectId() + "/roles/" + managedProjectRoleId).status());
 
             JsonNode repository = session.requireJson(session.post("/api/v1/workspaces/" + workspace.workspaceId() + "/repository-connections", JsonSupport.object(
                     "projectId", workspace.projectId(),
@@ -180,5 +258,28 @@ class WorkspaceAdminApiTest {
             }
         }
         throw new AssertionError("Expected " + field + "=" + value + " in " + items);
+    }
+
+    private static boolean containsPermission(JsonNode permissions, String key) {
+        for (JsonNode permission : permissions) {
+            if (key.equals(permission.path("key").asText())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static List<String> permissionKeys(JsonNode role) {
+        List<String> keys = new ArrayList<>();
+        for (JsonNode key : role.path("permissionKeys")) {
+            keys.add(key.asText());
+        }
+        return keys;
+    }
+
+    private static List<String> withoutPermission(JsonNode role, String removedKey) {
+        return permissionKeys(role).stream()
+                .filter(key -> !removedKey.equals(key))
+                .toList();
     }
 }

@@ -121,6 +121,7 @@ class FrontendShellTest {
             mockCurrentUser(page);
             mockCsrf(page);
             mockProjectSecurityPolicy(page, projectId, publicEnabled);
+            mockProjectRoles(page, projectId);
             mockPublicProject(page, workspaceId, projectId, publicEnabled);
             mockPublicProjectWorkItems(page, projectId, publicEnabled);
 
@@ -213,17 +214,56 @@ class FrontendShellTest {
     }
 
     private static void mockWorkspaceRoles(Page page, String workspaceId) {
+        String roleId = "00000000-0000-0000-0000-000000000401";
         page.route("**/api/v1/workspaces/" + workspaceId + "/roles", route -> fulfillJson(route, 200, """
                 [{
-                  "id": "00000000-0000-0000-0000-000000000401",
+                  "id": "%s",
                   "workspaceId": "00000000-0000-0000-0000-000000000101",
                   "key": "member",
                   "name": "Member",
                   "scope": "workspace",
                   "description": "Creates and updates project work.",
-                  "systemRole": true
+                  "systemRole": true,
+                  "status": "active",
+                  "permissionKeys": ["workspace.read", "project.read", "work_item.read", "work_item.update"],
+                  "impactSummary": {
+                    "activeMembers": 1,
+                    "pendingInvitations": 0,
+                    "affectedUsers": 1,
+                    "affectsCurrentUser": false
+                  }
                 }]
-                """));
+                """.formatted(roleId)));
+        page.route("**/api/v1/workspaces/" + workspaceId + "/roles/permissions", route -> fulfillJson(route, 200, rolePermissionCatalog()));
+        page.route("**/api/v1/workspaces/" + workspaceId + "/roles/" + roleId, route -> fulfillJson(route, 200, roleJson(roleId, workspaceId, null, "workspace", "member", "Member")));
+        page.route("**/api/v1/workspaces/" + workspaceId + "/roles/" + roleId + "/versions", route -> fulfillJson(route, 200, roleVersionsJson(roleId)));
+    }
+
+    private static void mockProjectRoles(Page page, String projectId) {
+        String roleId = "00000000-0000-0000-0000-000000000402";
+        page.route("**/api/v1/projects/" + projectId + "/roles", route -> fulfillJson(route, 200, """
+                [{
+                  "id": "%s",
+                  "workspaceId": "00000000-0000-0000-0000-000000000101",
+                  "projectId": "%s",
+                  "key": "project_admin",
+                  "name": "Project Admin",
+                  "scope": "project",
+                  "description": "Administers the project.",
+                  "systemRole": true,
+                  "status": "active",
+                  "permissionKeys": ["project.admin", "project.read", "work_item.read", "work_item.update"],
+                  "impactSummary": {
+                    "activeMembers": 1,
+                    "pendingInvitations": 0,
+                    "affectedUsers": 1,
+                    "affectsCurrentUser": false
+                  }
+                }]
+                """.formatted(roleId, projectId)));
+        page.route("**/api/v1/projects/" + projectId + "/roles/permissions", route -> fulfillJson(route, 200, rolePermissionCatalog()));
+        page.route("**/api/v1/projects/" + projectId + "/roles/" + roleId, route -> fulfillJson(route, 200, roleJson(roleId, "00000000-0000-0000-0000-000000000101", projectId, "project", "project_admin", "Project Admin")));
+        page.route("**/api/v1/projects/" + projectId + "/roles/" + roleId + "/versions", route -> fulfillJson(route, 200, roleVersionsJson(roleId)));
     }
 
     private static void mockWorkspaceSecurityPolicy(Page page, String workspaceId) {
@@ -604,6 +644,93 @@ class FrontendShellTest {
                 .setStatus(status)
                 .setContentType("application/json")
                 .setBody(body));
+    }
+
+    private static String rolePermissionCatalog() {
+        return """
+                [
+                  {
+                    "id": "00000000-0000-0000-0000-000000000901",
+                    "key": "workspace.read",
+                    "name": "Read workspace",
+                    "description": "Read workspace data.",
+                    "category": "workspace"
+                  },
+                  {
+                    "id": "00000000-0000-0000-0000-000000000902",
+                    "key": "project.read",
+                    "name": "Read project",
+                    "description": "Read project data.",
+                    "category": "project"
+                  },
+                  {
+                    "id": "00000000-0000-0000-0000-000000000903",
+                    "key": "work_item.read",
+                    "name": "Read work items",
+                    "description": "Read work items.",
+                    "category": "work"
+                  },
+                  {
+                    "id": "00000000-0000-0000-0000-000000000904",
+                    "key": "work_item.update",
+                    "name": "Update work items",
+                    "description": "Update work items.",
+                    "category": "work"
+                  }
+                ]
+                """;
+    }
+
+    private static String roleJson(String roleId, String workspaceId, String projectId, String scope, String key, String name) {
+        return """
+                {
+                  "id": "%s",
+                  "workspaceId": "%s",
+                  "projectId": %s,
+                  "key": "%s",
+                  "name": "%s",
+                  "scope": "%s",
+                  "description": "Browser role management test role",
+                  "systemRole": true,
+                  "status": "active",
+                  "permissionKeys": ["%s.read", "work_item.read", "work_item.update"],
+                  "impactSummary": {
+                    "activeMembers": 1,
+                    "pendingInvitations": 0,
+                    "affectedUsers": 1,
+                    "affectsCurrentUser": false
+                  },
+                  "createdAt": "2026-04-21T17:00:00Z",
+                  "updatedAt": "2026-04-21T17:00:00Z"
+                }
+                """.formatted(
+                roleId,
+                workspaceId,
+                projectId == null ? "null" : "\"" + projectId + "\"",
+                key,
+                name,
+                scope,
+                scope
+        );
+    }
+
+    private static String roleVersionsJson(String roleId) {
+        return """
+                [{
+                  "id": "00000000-0000-0000-0000-000000000910",
+                  "roleId": "%s",
+                  "versionNumber": 1,
+                  "name": "Member",
+                  "key": "member",
+                  "scope": "workspace",
+                  "systemRole": true,
+                  "status": "active",
+                  "permissionKeys": ["workspace.read", "work_item.read"],
+                  "changeType": "baseline",
+                  "changeNote": "Browser fixture baseline",
+                  "createdAt": "2026-04-21T17:00:00Z"
+                }]
+                """.formatted(roleId);
     }
 
     private static Locator navigationLink(Locator navigation, String name) {

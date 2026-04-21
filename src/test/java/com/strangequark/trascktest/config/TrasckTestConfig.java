@@ -12,7 +12,9 @@ public record TrasckTestConfig(
         boolean headless,
         Duration timeout,
         String loginIdentifier,
-        String loginPassword
+        String loginPassword,
+        String workspaceId,
+        String projectId
 ) {
     public static TrasckTestConfig load() {
         return new TrasckTestConfig(
@@ -22,12 +24,18 @@ public record TrasckTestConfig(
                 Boolean.parseBoolean(EnvUtility.getEnvVar("TRASCK_E2E_HEADLESS", "true")),
                 Duration.ofMillis(Long.parseLong(EnvUtility.getEnvVar("TRASCK_E2E_TIMEOUT_MS", "30000"))),
                 blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_LOGIN_IDENTIFIER", "")),
-                blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_LOGIN_PASSWORD", ""))
+                blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_LOGIN_PASSWORD", "")),
+                blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_WORKSPACE_ID", "")),
+                blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_PROJECT_ID", ""))
         );
     }
 
     public boolean hasLoginCredentials() {
         return loginIdentifier != null && loginPassword != null;
+    }
+
+    public boolean hasWorkspaceContext() {
+        return workspaceId != null && projectId != null;
     }
 
     private static URI normalizedUri(String value) {

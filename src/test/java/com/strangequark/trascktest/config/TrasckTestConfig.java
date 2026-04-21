@@ -15,7 +15,8 @@ public record TrasckTestConfig(
         String loginPassword,
         String workspaceId,
         String projectId,
-        boolean allowSetupBootstrap
+        boolean allowSetupBootstrap,
+        boolean seedSampleData
 ) {
     public static TrasckTestConfig load() {
         return new TrasckTestConfig(
@@ -28,7 +29,8 @@ public record TrasckTestConfig(
                 blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_LOGIN_PASSWORD", "")),
                 blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_WORKSPACE_ID", "")),
                 blankToNull(EnvUtility.getEnvVar("TRASCK_E2E_PROJECT_ID", "")),
-                Boolean.parseBoolean(EnvUtility.getEnvVar("TRASCK_E2E_ALLOW_SETUP", "false"))
+                Boolean.parseBoolean(EnvUtility.getEnvVar("TRASCK_E2E_ALLOW_SETUP", "false")),
+                Boolean.parseBoolean(EnvUtility.getEnvVar("TRASCK_E2E_SEED_SAMPLE_DATA", "false"))
         );
     }
 

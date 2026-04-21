@@ -13,7 +13,10 @@ import com.strangequark.trascktest.support.ApiRequestFactory;
 import com.strangequark.trascktest.support.ArtifactPaths;
 import com.strangequark.trascktest.support.JsonSupport;
 import com.strangequark.trascktest.support.RuntimeChecks;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -21,102 +24,18 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @Tag("api")
 @Tag("contract")
 class OpenApiRouteInventoryApiTest {
-    private static final Set<String> COVERED_ROUTE_KEYS = Set.of(
-            "GET /api/trasck/health",
-            "POST /api/v1/setup",
-            "GET /api/v1/auth/csrf",
-            "POST /api/v1/auth/login",
-            "GET /api/v1/auth/me",
-            "POST /api/v1/auth/tokens/personal",
-            "GET /api/v1/auth/tokens/personal",
-            "DELETE /api/v1/auth/tokens/{tokenId}",
-            "POST /api/v1/workspaces/{workspaceId}/service-tokens",
-            "GET /api/v1/workspaces/{workspaceId}/service-tokens",
-            "DELETE /api/v1/workspaces/{workspaceId}/service-tokens/{tokenId}",
-            "GET /api/v1/system-admins",
-            "GET /api/v1/workspaces/{workspaceId}/security-policy",
-            "PATCH /api/v1/workspaces/{workspaceId}/security-policy",
-            "GET /api/v1/projects/{projectId}/security-policy",
-            "PATCH /api/v1/projects/{projectId}/security-policy",
-            "POST /api/v1/projects/{projectId}/work-items",
-            "GET /api/v1/projects/{projectId}/work-items",
-            "PATCH /api/v1/work-items/{workItemId}",
-            "DELETE /api/v1/work-items/{workItemId}",
-            "GET /api/v1/work-items/{workItemId}/comments",
-            "POST /api/v1/work-items/{workItemId}/comments",
-            "DELETE /api/v1/work-items/{workItemId}/comments/{commentId}",
-            "POST /api/v1/work-items/{workItemId}/links",
-            "DELETE /api/v1/work-items/{workItemId}/links/{linkId}",
-            "POST /api/v1/work-items/{workItemId}/watchers",
-            "DELETE /api/v1/work-items/{workItemId}/watchers/{userId}",
-            "POST /api/v1/work-items/{workItemId}/work-logs",
-            "DELETE /api/v1/work-items/{workItemId}/work-logs/{workLogId}",
-            "POST /api/v1/work-items/{workItemId}/attachments",
-            "DELETE /api/v1/work-items/{workItemId}/attachments/{attachmentId}",
-            "GET /api/v1/workspaces/{workspaceId}/teams",
-            "POST /api/v1/workspaces/{workspaceId}/teams",
-            "DELETE /api/v1/teams/{teamId}",
-            "GET /api/v1/projects/{projectId}/teams",
-            "PUT /api/v1/projects/{projectId}/teams/{teamId}",
-            "DELETE /api/v1/projects/{projectId}/teams/{teamId}",
-            "GET /api/v1/projects/{projectId}/iterations",
-            "POST /api/v1/projects/{projectId}/iterations",
-            "DELETE /api/v1/iterations/{iterationId}",
-            "GET /api/v1/projects/{projectId}/releases",
-            "POST /api/v1/projects/{projectId}/releases",
-            "DELETE /api/v1/releases/{releaseId}",
-            "GET /api/v1/projects/{projectId}/roadmaps",
-            "POST /api/v1/workspaces/{workspaceId}/roadmaps",
-            "DELETE /api/v1/roadmaps/{roadmapId}",
-            "GET /api/v1/projects/{projectId}/boards",
-            "POST /api/v1/projects/{projectId}/boards",
-            "DELETE /api/v1/boards/{boardId}",
-            "GET /api/v1/boards/{boardId}/columns",
-            "POST /api/v1/boards/{boardId}/columns",
-            "DELETE /api/v1/boards/{boardId}/columns/{columnId}",
-            "GET /api/v1/boards/{boardId}/work-items",
-            "GET /api/v1/projects/{projectId}/saved-filters",
-            "POST /api/v1/workspaces/{workspaceId}/saved-filters",
-            "GET /api/v1/saved-filters/{savedFilterId}/work-items",
-            "DELETE /api/v1/saved-filters/{savedFilterId}",
-            "GET /api/v1/projects/{projectId}/dashboards",
-            "POST /api/v1/workspaces/{workspaceId}/dashboards",
-            "GET /api/v1/dashboards/{dashboardId}/render",
-            "DELETE /api/v1/dashboards/{dashboardId}",
-            "POST /api/v1/dashboards/{dashboardId}/widgets",
-            "DELETE /api/v1/dashboards/{dashboardId}/widgets/{widgetId}",
-            "POST /api/v1/workspaces/{workspaceId}/personalization/views",
-            "DELETE /api/v1/personalization/views/{viewId}",
-            "POST /api/v1/workspaces/{workspaceId}/personalization/favorites",
-            "DELETE /api/v1/personalization/favorites/{favoriteId}",
-            "POST /api/v1/workspaces/{workspaceId}/personalization/recent-items",
-            "DELETE /api/v1/personalization/recent-items/{recentItemId}",
-            "GET /api/v1/workspaces/{workspaceId}/audit-log",
-            "GET /api/v1/workspaces/{workspaceId}/audit-retention-policy",
-            "GET /api/v1/workspaces/{workspaceId}/export-jobs"
-    );
-
-    private static final Set<String> HIGH_RISK_MARKERS = Set.of(
-            "/auth/",
-            "/tokens",
-            "/service-tokens",
-            "/system-admins",
-            "/audit",
-            "/export",
-            "/imports",
-            "/automation",
-            "/webhook",
-            "/email",
-            "/agent",
-            "/domain-events"
-    );
+    private static final String COVERAGE_BASELINE = "/backend-route-coverage.tsv";
+    private static final Set<String> VALID_STATUSES = Set.of("covered", "planned-high-risk", "planned");
 
     private final TrasckTestConfig config = TrasckTestConfig.load();
 
@@ -138,7 +57,10 @@ class OpenApiRouteInventoryApiTest {
             assertTrue(operations.stream().anyMatch(operation -> operation.path().contains("/agent")),
                     "Agent routes should be present in OpenAPI inventory");
 
-            String inventory = inventoryText(operations);
+            Map<String, CoverageEntry> baseline = readCoverageBaseline();
+            assertBaselineMatchesOpenApi(operations, baseline);
+
+            String inventory = inventoryText(operations, baseline);
             assertFalse(inventory.isBlank());
             writeInventory(inventory);
             request.dispose();
@@ -177,10 +99,11 @@ class OpenApiRouteInventoryApiTest {
         return values;
     }
 
-    private String inventoryText(List<RouteOperation> operations) {
+    private String inventoryText(List<RouteOperation> operations, Map<String, CoverageEntry> baseline) {
         StringBuilder builder = new StringBuilder("status\tmethod\tpath\ttags\toperationId\n");
         for (RouteOperation operation : operations) {
-            builder.append(status(operation))
+            CoverageEntry coverage = baseline.get(operation.key());
+            builder.append(coverage == null ? "missing" : coverage.status())
                     .append('\t')
                     .append(operation.method())
                     .append('\t')
@@ -194,14 +117,53 @@ class OpenApiRouteInventoryApiTest {
         return builder.toString();
     }
 
-    private String status(RouteOperation operation) {
-        if (COVERED_ROUTE_KEYS.contains(operation.key())) {
-            return "covered";
+    private Map<String, CoverageEntry> readCoverageBaseline() {
+        InputStream stream = OpenApiRouteInventoryApiTest.class.getResourceAsStream(COVERAGE_BASELINE);
+        if (stream == null) {
+            throw new AssertionError("Missing committed route coverage baseline " + COVERAGE_BASELINE);
         }
-        if (HIGH_RISK_MARKERS.stream().anyMatch(marker -> operation.path().contains(marker))) {
-            return "planned-high-risk";
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, java.nio.charset.StandardCharsets.UTF_8))) {
+            List<String> lines = reader.lines()
+                    .filter(line -> !line.isBlank() && !line.startsWith("#"))
+                    .toList();
+            if (lines.isEmpty() || !"status\tmethod\tpath\ttags\toperationId".equals(lines.getFirst())) {
+                throw new AssertionError("Route coverage baseline must start with: status\\tmethod\\tpath\\ttags\\toperationId");
+            }
+            java.util.LinkedHashMap<String, CoverageEntry> entries = new java.util.LinkedHashMap<>();
+            for (String line : lines.subList(1, lines.size())) {
+                String[] columns = line.split("\t", -1);
+                if (columns.length != 5) {
+                    throw new AssertionError("Invalid route coverage baseline row: " + line);
+                }
+                CoverageEntry entry = new CoverageEntry(columns[0], columns[1], columns[2], columns[3], columns[4]);
+                if (!VALID_STATUSES.contains(entry.status())) {
+                    throw new AssertionError("Invalid route coverage status '" + entry.status() + "' for " + entry.key());
+                }
+                if (entries.put(entry.key(), entry) != null) {
+                    throw new AssertionError("Duplicate route coverage baseline row for " + entry.key());
+                }
+            }
+            return entries;
+        } catch (IOException ex) {
+            throw new AssertionError("Unable to read route coverage baseline " + COVERAGE_BASELINE, ex);
         }
-        return "planned";
+    }
+
+    private void assertBaselineMatchesOpenApi(List<RouteOperation> operations, Map<String, CoverageEntry> baseline) {
+        Set<String> runtimeKeys = operations.stream()
+                .map(RouteOperation::key)
+                .collect(Collectors.toCollection(TreeSet::new));
+        Set<String> baselineKeys = new TreeSet<>(baseline.keySet());
+
+        Set<String> missing = new TreeSet<>(runtimeKeys);
+        missing.removeAll(baselineKeys);
+        Set<String> stale = new TreeSet<>(baselineKeys);
+        stale.removeAll(runtimeKeys);
+
+        assertTrue(missing.isEmpty(),
+                "Add these routes to src/test/resources/backend-route-coverage.tsv with an explicit status: " + missing);
+        assertTrue(stale.isEmpty(),
+                "Remove or update stale routes in src/test/resources/backend-route-coverage.tsv: " + stale);
     }
 
     private void writeInventory(String inventory) {
@@ -215,6 +177,12 @@ class OpenApiRouteInventoryApiTest {
     }
 
     private record RouteOperation(String method, String path, String operationId, Set<String> tags) {
+        String key() {
+            return method + " " + path;
+        }
+    }
+
+    private record CoverageEntry(String status, String method, String path, String tags, String operationId) {
         String key() {
             return method + " " + path;
         }

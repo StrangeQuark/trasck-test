@@ -1,0 +1,11 @@
+services:
+  trasck-test-service:
+    build: .
+    networks:
+      - trasck-network
+    container_name: trasck-test-service
+    volumes:
+      - ./test-results:/trascktestservice/test-results
+networks:
+  trasck-network:
+    external: true

@@ -1,6 +1,7 @@
 package com.strangequark.trascktest.e2e;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -70,7 +71,7 @@ class AgentRealWorkflowTest {
             assertThat(page.getByText(providerName).first()).isVisible();
             JsonNode provider = requireRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/agent-providers", "providerKey", providerKey);
             String providerId = provider.path("id").asText();
-            cleanup.add(() -> apiSession.patch("/api/v1/agent-providers/" + providerId, JsonSupport.object("enabled", false)));
+            cleanup.add(() -> apiSession.post("/api/v1/agent-providers/" + providerId + "/deactivate", Map.of()));
 
             Locator profilePanel = panel(page, "Profile");
             profilePanel.getByLabel("Provider").selectOption(providerId);
@@ -81,7 +82,7 @@ class AgentRealWorkflowTest {
             assertThat(page.getByText(profileName).first()).isVisible();
             JsonNode profile = requireRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/agents", "displayName", profileName);
             String profileId = profile.path("id").asText();
-            cleanup.add(() -> apiSession.patch("/api/v1/agents/" + profileId, JsonSupport.object("status", "disabled")));
+            cleanup.add(() -> apiSession.post("/api/v1/agents/" + profileId + "/deactivate", Map.of()));
 
             panel(page, "Profile").getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Preview runtime")).click();
             assertThat(page.getByText("trasck.agent-runtime-preview.v1").first()).isVisible();
@@ -120,6 +121,13 @@ class AgentRealWorkflowTest {
             assertThat(page.getByText("agent_dispatch_attempts").first()).isVisible();
             recordsPanel.getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Prune attempts")).click();
             assertThat(page.getByText("attemptsPruned").first()).isVisible();
+
+            profilePanel.getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Deactivate profile")).click();
+            assertThat(page.getByText("disabled").first()).isVisible();
+            providerPanel.getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Deactivate provider")).click();
+            assertFalse(requireRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/agent-providers", "providerKey", providerKey)
+                    .path("enabled")
+                    .asBoolean());
 
             browserSession.screenshot();
             browserSession.assertNoConsoleErrors();

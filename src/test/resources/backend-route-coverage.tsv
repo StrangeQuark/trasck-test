@@ -3,6 +3,7 @@ covered	GET	/api/trasck/health	health-controller	healthcheck	HealthApiTest#backe
 covered	POST	/api/v1/agent-callbacks/{providerKey}	agent-task-controller	callback	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
 covered	PATCH	/api/v1/agent-providers/{providerId}	agent-provider-controller	updateProvider	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
 covered	POST	/api/v1/agent-providers/{providerId}/callback-keys/rotate	agent-provider-controller	rotateCallbackKey	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/agent-providers/{providerId}/deactivate	agent-provider-controller	deactivateProvider	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
 covered	GET	/api/v1/agent-providers/{providerId}/credentials	agent-provider-controller	listCredentials	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
 covered	POST	/api/v1/agent-providers/{providerId}/credentials	agent-provider-controller	createCredential	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
 covered	POST	/api/v1/agent-providers/{providerId}/credentials/reencrypt	agent-provider-controller	reencryptCredentials	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
@@ -16,6 +17,7 @@ covered	POST	/api/v1/agent-tasks/{taskId}/request-changes	agent-task-controller	
 covered	POST	/api/v1/agent-tasks/{taskId}/retry	agent-task-controller	retryTask	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
 covered	POST	/api/v1/agent-tasks/{taskId}/worker-dispatch	agent-task-controller	workerDispatch	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
 covered	PATCH	/api/v1/agents/{profileId}	agent-profile-controller	updateProfile	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
+covered	POST	/api/v1/agents/{profileId}/deactivate	agent-profile-controller	deactivateProfile	AgentWorkerCallbackApiTest#authenticatedAdminsCanExerciseAgentWorkerCallbackAndDispatchAttemptLifecycle
 covered	GET	/api/v1/auth/csrf	auth-controller	csrf	CsrfApiTest#csrfEndpointReturnsBrowserTokenMetadata
 covered	POST	/api/v1/auth/login	auth-controller	login	AuthSessionApiTest#loginEstablishesCookieAndBearerSessionsWhenCredentialsAreProvided
 covered	POST	/api/v1/auth/logout	auth-controller	logout	AuthSessionApiTest#logoutRegisterAndOauthRoutesRejectUnsafeInputs

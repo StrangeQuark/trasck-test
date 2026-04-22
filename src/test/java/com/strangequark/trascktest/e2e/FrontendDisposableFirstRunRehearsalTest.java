@@ -171,7 +171,7 @@ class FrontendDisposableFirstRunRehearsalTest {
                 page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create provider")).click();
                 assertThat(page.getByText(providerName).first()).isVisible();
                 JsonNode provider = requireRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/agent-providers", "providerKey", providerKey);
-                cleanup.add(() -> apiSession.patch("/api/v1/agent-providers/" + provider.path("id").asText(), JsonSupport.object("enabled", false)));
+                cleanup.add(() -> apiSession.post("/api/v1/agent-providers/" + provider.path("id").asText() + "/deactivate", Map.of()));
 
                 String profileName = "First Run Agent Profile " + suffix;
                 Locator profilePanel = panel(page, "Profile");
@@ -182,7 +182,7 @@ class FrontendDisposableFirstRunRehearsalTest {
                 page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create profile")).click();
                 assertThat(page.getByText(profileName).first()).isVisible();
                 JsonNode profile = requireRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/agents", "displayName", profileName);
-                cleanup.add(() -> apiSession.patch("/api/v1/agents/" + profile.path("id").asText(), JsonSupport.object("status", "disabled")));
+                cleanup.add(() -> apiSession.post("/api/v1/agents/" + profile.path("id").asText() + "/deactivate", Map.of()));
 
                 String repositoryName = "First Run Repository " + suffix;
                 Locator repositoryPanel = panel(page, "Repository");

@@ -13,6 +13,10 @@ public final class SampleDataFixture {
         if (!config.seedSampleData()) {
             return SampleDataContext.empty();
         }
+        return create(session, workspace, cleanup);
+    }
+
+    public static SampleDataContext create(AuthSession session, TestWorkspace workspace, ApiCleanup cleanup) {
         String suffix = UniqueData.suffix();
         JsonNode story = createStory(session, workspace.projectId(), suffix);
         cleanup.delete(session, "/api/v1/work-items/" + story.path("id").asText());

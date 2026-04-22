@@ -280,6 +280,11 @@ class AgentWorkerCallbackApiTest {
                     JsonSupport.object("agentTaskId", taskId, "retentionDays", 1, "exportBeforePrune", false)
             ), 200);
             assertEquals(0, dispatchPrune.path("attemptsPruned").asInt(), dispatchPrune.toString());
+
+            JsonNode deactivatedProfile = session.requireJson(session.post("/api/v1/agents/" + profileId + "/deactivate", Map.of()), 200);
+            assertEquals("disabled", deactivatedProfile.path("status").asText(), deactivatedProfile.toString());
+            JsonNode deactivatedProvider = session.requireJson(session.post("/api/v1/agent-providers/" + providerId + "/deactivate", Map.of()), 200);
+            assertFalse(deactivatedProvider.path("enabled").asBoolean(), deactivatedProvider.toString());
         }
     }
 

@@ -48,6 +48,15 @@ class AgentWorkerCallbackApiTest {
                     "agent-profiles-unauthenticated");
             assertUnauthorized(request.get("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-dispatch-attempts"),
                     "agent-dispatch-attempts-unauthenticated");
+            assertUnauthorized(request.get("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs"),
+                    "agent-cli-runs-unauthenticated");
+            assertUnauthorized(request.get("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs/00000000-0000-0000-0000-000000000001/download"),
+                    "agent-cli-run-download-unauthenticated");
+            assertUnauthorized(request.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs/00000000-0000-0000-0000-000000000001"),
+                    "agent-cli-run-delete-unauthenticated");
+            assertUnauthorized(request.post("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs/prune",
+                    RequestOptions.create().setData(JsonSupport.object("retentionDays", 7))),
+                    "agent-cli-run-prune-unauthenticated");
             assertUnauthorized(request.post("/api/v1/work-items/00000000-0000-0000-0000-000000000001/assign-agent",
                     RequestOptions.create().setData(JsonSupport.object("agentProfileId", "00000000-0000-0000-0000-000000000002"))),
                     "assign-agent-unauthenticated");
@@ -336,6 +345,17 @@ class AgentWorkerCallbackApiTest {
                     JsonSupport.object("agentTaskId", taskId, "retentionDays", 1, "exportBeforePrune", false)
             ), 200);
             assertEquals(0, dispatchPrune.path("attemptsPruned").asInt(), dispatchPrune.toString());
+            JsonNode cliRuns = session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs"), 200);
+            assertTrue(cliRuns.isArray(), cliRuns.toString());
+            APIResponse missingCliArchive = session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs/" + taskId + "/download");
+            assertEquals(404, missingCliArchive.status(), missingCliArchive.text());
+            APIResponse missingCliDelete = session.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs/" + taskId);
+            assertEquals(404, missingCliDelete.status(), missingCliDelete.text());
+            JsonNode cliPrune = session.requireJson(session.post(
+                    "/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs/prune",
+                    JsonSupport.object("retentionDays", 0)
+            ), 200);
+            assertEquals(0, cliPrune.path("deletedRuns").asInt(), cliPrune.toString());
 
             JsonNode deactivatedProfile = session.requireJson(session.post("/api/v1/agents/" + profileId + "/deactivate", Map.of()), 200);
             assertEquals("disabled", deactivatedProfile.path("status").asText(), deactivatedProfile.toString());

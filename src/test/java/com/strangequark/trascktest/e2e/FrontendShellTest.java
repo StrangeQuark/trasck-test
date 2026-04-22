@@ -300,6 +300,10 @@ class FrontendShellTest {
         AtomicBoolean taskCanceled = new AtomicBoolean(false);
         AtomicBoolean attemptsExported = new AtomicBoolean(false);
         AtomicBoolean attemptsPruned = new AtomicBoolean(false);
+        AtomicBoolean cliRunsLoaded = new AtomicBoolean(false);
+        AtomicBoolean cliRunDownloaded = new AtomicBoolean(false);
+        AtomicBoolean cliRunDeleted = new AtomicBoolean(false);
+        AtomicBoolean cliRunsPruned = new AtomicBoolean(false);
 
         try (Playwright playwright = Playwright.create();
                 Browser browser = BrowserFactory.launch(playwright, config);
@@ -329,14 +333,18 @@ class FrontendShellTest {
                     taskAccepted,
                     taskCanceled,
                     attemptsExported,
-                    attemptsPruned
+                    attemptsPruned,
+                    cliRunsLoaded,
+                    cliRunDownloaded,
+                    cliRunDeleted,
+                    cliRunsPruned
             );
 
             page.navigate("/agents");
 
             assertThat(page.locator("xpath=//h2[normalize-space()='Provider']").first()).isVisible();
             assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Agent Records"))).isVisible();
-            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load")).last().click();
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName(Pattern.compile("^Load$"))).last().click();
             assertThat(page.getByText("Browser Agent Provider").first()).isVisible();
             assertThat(page.getByText("Browser Agent Profile").first()).isVisible();
             assertThat(page.getByText("Browser agent story").first()).isVisible();
@@ -354,7 +362,7 @@ class FrontendShellTest {
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Assign")).click();
             assertTrue(taskAssigned.get(), "Assign should call the work-item agent assignment endpoint");
             assertThat(page.getByText(taskId).first()).isVisible();
-            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load")).first().click();
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName(Pattern.compile("^Load$"))).first().click();
             assertTrue(taskLoaded.get(), "Task Load should call the agent task detail endpoint");
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Retry")).click();
             assertTrue(taskRetried.get(), "Retry should call the agent task retry endpoint");
@@ -369,6 +377,15 @@ class FrontendShellTest {
             assertTrue(attemptsExported.get(), "Export attempts should call the dispatch-attempt export endpoint");
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Prune attempts")).click();
             assertTrue(attemptsPruned.get(), "Prune attempts should call the dispatch-attempt prune endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load runs")).click();
+            assertTrue(cliRunsLoaded.get(), "Load runs should call the CLI run artifact endpoint");
+            assertThat(page.getByText("prompt, task, output").first()).isVisible();
+            page.locator("button[title='Download archive']").click();
+            assertTrue(cliRunDownloaded.get(), "Download archive should call the CLI run archive endpoint");
+            page.locator("button[title='Delete run directory']").click();
+            assertTrue(cliRunDeleted.get(), "Delete run directory should call the CLI run delete endpoint");
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Prune runs")).click();
+            assertTrue(cliRunsPruned.get(), "Prune runs should call the CLI run prune endpoint");
 
             session.screenshot();
             session.assertNoConsoleErrors();
@@ -1029,7 +1046,11 @@ class FrontendShellTest {
             AtomicBoolean taskAccepted,
             AtomicBoolean taskCanceled,
             AtomicBoolean attemptsExported,
-            AtomicBoolean attemptsPruned
+            AtomicBoolean attemptsPruned,
+            AtomicBoolean cliRunsLoaded,
+            AtomicBoolean cliRunDownloaded,
+            AtomicBoolean cliRunDeleted,
+            AtomicBoolean cliRunsPruned
     ) {
         page.route("**/api/v1/workspaces/" + workspaceId + "/agent-providers", route -> {
             if ("POST".equals(route.request().method())) {
@@ -1154,6 +1175,46 @@ class FrontendShellTest {
                       "limit": 25
                     }
                     """.formatted(agentDispatchAttemptJson(taskId, providerId, profileId, workItemId)));
+        });
+        page.route("**/api/v1/workspaces/" + workspaceId + "/agent-cli-runs**", route -> {
+            String method = route.request().method();
+            String url = route.request().url();
+            if ("GET".equals(method) && url.contains("/download")) {
+                cliRunDownloaded.set(true);
+                route.fulfill(new Route.FulfillOptions()
+                        .setStatus(200)
+                        .setContentType("application/zip")
+                        .setBody("PK mocked zip"));
+                return;
+            }
+            if ("DELETE".equals(method)) {
+                cliRunDeleted.set(true);
+                fulfillJson(route, 200, """
+                        {
+                          "workspaceId": "%s",
+                          "cutoff": null,
+                          "deletedRuns": 1,
+                          "deletedBytes": 512,
+                          "deletedAgentTaskIds": ["%s"]
+                        }
+                        """.formatted(workspaceId, taskId));
+                return;
+            }
+            if ("POST".equals(method) && url.contains("/prune")) {
+                cliRunsPruned.set(true);
+                fulfillJson(route, 200, """
+                        {
+                          "workspaceId": "%s",
+                          "cutoff": "2026-04-22T00:00:00Z",
+                          "deletedRuns": 0,
+                          "deletedBytes": 0,
+                          "deletedAgentTaskIds": []
+                        }
+                        """.formatted(workspaceId));
+                return;
+            }
+            cliRunsLoaded.set(true);
+            fulfillJson(route, 200, "[" + agentCliRunJson(taskId, workspaceId, providerId, profileId, workItemId) + "]");
         });
     }
 
@@ -2107,6 +2168,28 @@ class FrontendShellTest {
                   "finishedAt": "2026-04-21T20:00:01Z"
                 }
                 """.formatted(taskId, providerId, profileId, workItemId, taskId);
+    }
+
+    private static String agentCliRunJson(String taskId, String workspaceId, String providerId, String profileId, String workItemId) {
+        return """
+                {
+                  "agentTaskId": "%s",
+                  "workspaceId": "%s",
+                  "providerId": "%s",
+                  "providerType": "generic_worker",
+                  "agentProfileId": "%s",
+                  "workItemId": "%s",
+                  "status": "review_requested",
+                  "runDirectory": "/tmp/trasck-agent-runs/%s",
+                  "createdAt": "2026-04-22T00:00:00Z",
+                  "updatedAt": "2026-04-22T00:01:00Z",
+                  "sizeBytes": 512,
+                  "fileCount": 3,
+                  "promptPresent": true,
+                  "taskFilePresent": true,
+                  "outputPresent": true
+                }
+                """.formatted(taskId, workspaceId, providerId, profileId, workItemId, taskId);
     }
 
     private static String rolePermissionCatalog() {

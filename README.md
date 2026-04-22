@@ -15,9 +15,10 @@ Current starter coverage:
 - Authenticated backend API coverage for workspace/project security policy, public project/work-item/comment/attachment read boundaries with signed public attachment downloads, workspace/project role management, personal and service token scope behavior, system-admin/audit/export reads and mutations, domain-event replay, configuration/custom-field/screen/reporting CRUD, work item collaboration/activity, attachment byte upload/download, workspace and work-item label cleanup, reporting history/snapshot reads and snapshot execution controls, program CRUD/project assignment/dashboard summary, team-scoped dashboard/filter/view/report-query lists, repository connections, invitation list/cancellation, workspace-admin human user list/creation/removal, team/planning/board/release/roadmap resources, notification preferences/defaults plus direct and automation-created notification read coverage, automation rule/job/worker settings and worker run/health retention coverage, signed local-receiver-backed webhook delivery coverage with dual-secret rotation overlap and durable delivery key IDs, high-risk import lifecycle/review-export/report coverage, auth/logout/register/OAuth unsafe-input coverage, Maildev dry-run email delivery coverage, provider-neutral agent provider/profile/credential/task/callback/worker-token/dispatch-attempt coverage, dashboards, saved filters, saved views, favorites, and recent items when local credentials plus workspace/project IDs are configured or setup bootstrap is enabled against an empty stack.
 - Committed OpenAPI route coverage baseline at `src/test/resources/backend-route-coverage.tsv`, including `coverageOwner` for covered rows, plus generated route inventory output under `test-results/api/backend-route-inventory.tsv` so backend API gaps can be closed route by route. The current baseline tracks 397 covered backend routes, 0 ordinary planned routes, and 0 planned high-risk routes.
 - Optional sample-data fixture support that stays separate from first-run setup bootstrap, plus per-test API seed creation for real-backend browser workflows.
-- Opt-in managed production-like backend stack coverage that starts Testcontainers PostgreSQL/Redis plus the backend process from the sibling `trasck` repo, then checks production startup validation, Redis-backed rate-limit readiness, Swagger/OpenAPI protection, secure auth cookies, and system-admin list/grant/revoke gates.
+- Opt-in managed production-like backend stack coverage that starts Testcontainers PostgreSQL/Redis plus the backend process from the sibling `trasck` repo, then checks production startup validation, Redis-backed rate-limit readiness, Swagger/OpenAPI protection, secure auth cookies, and system-admin list/grant/revoke gates. The checked-in GitHub Actions workflow runs this `managed-stack` group on pull requests and `main` pushes when Docker and the backend checkout are available.
 - Frontend browser smoke tests for the route shell, core navigation, Workspace Settings member/invitation workflow, program/portfolio management, automation async worker controls, auth/token/system-admin controls, import review/export worker controls, agent provider/profile/repository/task/dispatch-attempt controls, public-read settings, and public project/work-item/comment/attachment preview route.
-- Real-backend browser workflow coverage for UI login, no browser access-token local storage, project work item load/create, saved-filter execution, dashboard render, team creation, and custom-field creation.
+- Real-backend browser workflow coverage for UI login, no browser access-token local storage, project work item load/create, saved-filter execution, dashboard render, team creation, custom-field creation, planning/board/release/roadmap UI creation, and board detail loading.
+- Disposable first-run frontend rehearsal coverage that creates its own setup context on an empty stack, signs in through the UI, loads API-seeded work, and touches the core work/planning/configuration/import/automation/agent routes with screenshots and traces.
 
 ## Prerequisites
 
@@ -107,6 +108,16 @@ Run only the managed production-like stack security tests:
 ```bash
 TRASCK_E2E_MANAGED_PROD_STACK=true mvn test -Dgroups=managed-stack
 ```
+
+## CI
+
+The `.github/workflows/playwright.yml` workflow keeps this repo Java-based. It runs `mvn -q -DskipTests test-compile` as a light pull-request gate, then checks out the backend repo and runs:
+
+```bash
+TRASCK_E2E_MANAGED_PROD_STACK=true mvn -q test -Dgroups=managed-stack
+```
+
+By default the workflow expects the backend repo to be named `trasck` under the same GitHub owner. Set the repository variable `TRASCK_BACKEND_REPOSITORY` to override that checkout target, for example `your-org/trasck-backend`.
 
 Artifacts are written under `test-results/`:
 

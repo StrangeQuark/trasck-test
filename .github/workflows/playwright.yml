@@ -1,0 +1,70 @@
+name: Java Playwright
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  compile:
+    name: Compile Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out trasck-test
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Compile Java Playwright tests
+        run: mvn -q -DskipTests test-compile
+
+  managed-production-security:
+    name: Managed Production Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out trasck-test
+        uses: actions/checkout@v4
+        with:
+          path: trasck-test
+
+      - name: Check out Trasck backend
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.TRASCK_BACKEND_REPOSITORY || format('{0}/trasck', github.repository_owner) }}
+          path: trasck
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Confirm Docker is available
+        run: docker info
+
+      - name: Make backend Maven wrapper executable
+        run: chmod +x "$GITHUB_WORKSPACE/trasck/mvnw"
+
+      - name: Run managed production security group
+        working-directory: trasck-test
+        env:
+          TRASCK_E2E_MANAGED_PROD_STACK: "true"
+          TRASCK_E2E_BACKEND_PROJECT_DIR: ${{ github.workspace }}/trasck
+        run: mvn -q test -Dgroups=managed-stack
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: managed-production-security-results
+          path: |
+            trasck-test/test-results
+            trasck-test/target/surefire-reports

@@ -15,6 +15,7 @@ Current starter coverage:
 - Authenticated backend API coverage for workspace/project security policy, public project/work-item/comment/attachment read boundaries with signed public attachment downloads, workspace/project role management, personal and service token scope behavior, system-admin/audit/export reads and mutations, domain-event replay, configuration/custom-field/screen/reporting CRUD, work item collaboration/activity, attachment byte upload/download, workspace and work-item label cleanup, reporting history/snapshot reads and snapshot execution controls, program CRUD/project assignment/dashboard summary, team-scoped dashboard/filter/view/report-query lists, repository connections, invitation list/cancellation, workspace-admin human user list/creation/removal, team/planning/board/release/roadmap resources, notification preferences/defaults plus direct and automation-created notification read coverage, automation rule/job/worker settings and worker run/health retention coverage, signed local-receiver-backed webhook delivery coverage with dual-secret rotation overlap and durable delivery key IDs, high-risk import lifecycle/review-export/report coverage, auth/logout/register/OAuth unsafe-input coverage, Maildev dry-run email delivery coverage, provider-neutral agent provider/profile/credential/task/callback/worker-token/dispatch-attempt coverage, dashboards, saved filters, saved views, favorites, and recent items when local credentials plus workspace/project IDs are configured or setup bootstrap is enabled against an empty stack.
 - Committed OpenAPI route coverage baseline at `src/test/resources/backend-route-coverage.tsv`, including `coverageOwner` for covered rows, plus generated route inventory output under `test-results/api/backend-route-inventory.tsv` so backend API gaps can be closed route by route. The current baseline tracks 397 covered backend routes, 0 ordinary planned routes, and 0 planned high-risk routes.
 - Optional sample-data fixture support that stays separate from first-run setup bootstrap, plus per-test API seed creation for real-backend browser workflows.
+- Opt-in managed production-like backend stack coverage that starts Testcontainers PostgreSQL/Redis plus the backend process from the sibling `trasck` repo, then checks production startup validation, Redis-backed rate-limit readiness, Swagger/OpenAPI protection, secure auth cookies, and system-admin list/grant/revoke gates.
 - Frontend browser smoke tests for the route shell, core navigation, Workspace Settings member/invitation workflow, program/portfolio management, automation async worker controls, auth/token/system-admin controls, import review/export worker controls, agent provider/profile/repository/task/dispatch-attempt controls, public-read settings, and public project/work-item/comment/attachment preview route.
 - Real-backend browser workflow coverage for UI login, no browser access-token local storage, project work item load/create, saved-filter execution, dashboard render, team creation, and custom-field creation.
 
@@ -22,6 +23,7 @@ Current starter coverage:
 
 - Java 21
 - Maven
+- Docker for managed production-like stack tests and any other Testcontainers-backed coverage
 - Running Trasck backend on `http://localhost:6100`
 - Running Trasck frontend on `http://localhost:8080`
 - PostgreSQL, Redis, and Maildev running through the Trasck backend Docker Compose/local runtime setup when the backend profile needs them
@@ -53,6 +55,9 @@ Supported variables:
 - `TRASCK_E2E_PROJECT_ID`: optional project ID used by authenticated project API coverage.
 - `TRASCK_E2E_ALLOW_SETUP`: set to `true` only for disposable local stacks where the suite may call first-run `/api/v1/setup`. Defaults to `false`.
 - `TRASCK_E2E_SEED_SAMPLE_DATA`: set to `true` only for tests that explicitly request optional browser workflow sample data after setup/login. Defaults to `false`.
+- `TRASCK_E2E_MANAGED_PROD_STACK`: set to `true` to let the suite start a separate production-like backend with Testcontainers PostgreSQL/Redis for managed production security coverage. Defaults to `false`.
+- `TRASCK_E2E_BACKEND_PROJECT_DIR`: path to the backend repo used by managed production stack tests. Defaults to `../trasck`.
+- `TRASCK_E2E_MANAGED_PROD_STACK_TIMEOUT_MS`: startup/failure timeout for managed production stack tests. Defaults to `180000`.
 - `TRASCK_E2E_LOCAL_RECEIVER_BIND_HOST`: bind host for the local HTTP receiver used by webhook/worker delivery assertions. Defaults to `0.0.0.0`.
 - `TRASCK_E2E_LOCAL_RECEIVER_PORT`: fixed receiver port. Defaults to `6199`.
 - `TRASCK_E2E_LOCAL_RECEIVER_PUBLIC_BASE_URL`: URL the backend should call for local receiver assertions. Defaults to `http://localhost:6199`; use `http://host.docker.internal:6199` when the backend runs in Docker and needs to call a receiver on the host.
@@ -68,6 +73,8 @@ The authenticated smoke tests are skipped unless both login variables are set or
 Run the backend and frontend with their normal local settings, keeping the backend on port `6100` and the frontend on port `8080`. The smoke suite assumes the backend owns PostgreSQL, Redis, Maildev, and any other service dependencies; `trasck-test` only drives HTTP and browser behavior from outside the application.
 
 For deterministic local runs, start the stack from a known database state, create or reuse a disposable test user, set the optional login and workspace/project variables in `.env`, then run `mvn test` from this repository. For a brand-new disposable database, set `TRASCK_E2E_ALLOW_SETUP=true` instead; the suite will create a Playwright admin/workspace/project through `/api/v1/setup`, reuse those IDs in-memory for the same Maven run, and verify that a second setup call returns conflict. Setup bootstrap intentionally remains minimal. Broader browser workflow data can be created through the separate optional sample-data fixture when `TRASCK_E2E_SEED_SAMPLE_DATA=true`; dedicated real-backend browser tests may also create the minimum seed records they need through authenticated APIs and clean them up through public APIs. The API tests create uniquely named temporary resources and delete the resources they create through Trasck HTTP APIs where public cleanup APIs exist; they do not use direct database access.
+
+Managed production-like stack tests are separate from the normal local-stack assumptions. When `TRASCK_E2E_MANAGED_PROD_STACK=true`, those tests start disposable PostgreSQL and Redis containers, launch the backend from `TRASCK_E2E_BACKEND_PROJECT_DIR` with the `prod` Spring profile and hardened environment values, and write backend process logs under `test-results/runtime`. They are intentionally opt-in because they compile and run the backend as a child process.
 
 ## Run Tests
 
@@ -95,10 +102,17 @@ Run through Docker, targeting Trasck services on the host:
 docker compose run --rm trasck-test
 ```
 
+Run only the managed production-like stack security tests:
+
+```bash
+TRASCK_E2E_MANAGED_PROD_STACK=true mvn test -Dgroups=managed-stack
+```
+
 Artifacts are written under `test-results/`:
 
 - `test-results/api`: response snippets with sensitive headers and token-shaped body fields redacted.
 - `test-results/api/backend-route-inventory.tsv`: generated OpenAPI route inventory with `covered`, `planned-high-risk`, and `planned` statuses.
+- `test-results/runtime`: managed backend process logs for opt-in production-like stack tests.
 - `src/test/resources/backend-route-coverage.tsv`: committed coverage baseline. The OpenAPI route inventory test fails when a backend route is added without an explicit baseline status, and covered rows must name their owning Java Playwright test in `coverageOwner`. The current baseline tracks 397 covered backend routes, 0 ordinary planned routes, and 0 planned high-risk routes.
 - `test-results/screenshots`: browser screenshots captured by smoke tests.
 - `test-results/traces`: Playwright trace ZIP files for browser runs.

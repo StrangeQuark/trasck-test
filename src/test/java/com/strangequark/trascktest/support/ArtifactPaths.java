@@ -24,6 +24,10 @@ public final class ArtifactPaths {
         return ROOT.resolve("api").resolve(safeName(filename));
     }
 
+    public static Path runtimeLog(String testName) {
+        return ROOT.resolve("runtime").resolve(safeName(testName) + ".log");
+    }
+
     private static String safeName(String testName) {
         return (testName == null || testName.isBlank() ? "test" : testName)
                 .replaceAll("[^a-zA-Z0-9._-]", "-")

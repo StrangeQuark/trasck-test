@@ -16,6 +16,7 @@
     <dotenv.version>3.0.0</dotenv.version>
     <jackson.version>2.19.2</jackson.version>
     <extent.version>5.1.0</extent.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
     <maven.compiler.version>3.13.0</maven.compiler.version>
     <maven.surefire.version>3.2.5</maven.surefire.version>
     <exec.maven.version>3.5.0</exec.maven.version>
@@ -81,6 +82,18 @@
       <groupId>com.aventstack</groupId>
       <artifactId>extentreports</artifactId>
       <version>${extent.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <version>${testcontainers.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${testcontainers.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -4,7 +4,9 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.AriaRole;
@@ -13,10 +15,13 @@ import com.strangequark.trascktest.support.ApiCleanup;
 import com.strangequark.trascktest.support.AuthSession;
 import com.strangequark.trascktest.support.BrowserFactory;
 import com.strangequark.trascktest.support.BrowserSession;
+import com.strangequark.trascktest.support.JsonSupport;
 import com.strangequark.trascktest.support.RuntimeChecks;
 import com.strangequark.trascktest.support.SampleDataFixture;
 import com.strangequark.trascktest.support.SetupBootstrap;
 import com.strangequark.trascktest.support.TestWorkspace;
+import com.strangequark.trascktest.support.UniqueData;
+import java.util.Map;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -84,6 +89,135 @@ class FrontendDisposableFirstRunRehearsalTest {
         }
     }
 
+    @Test
+    void disposableFirstRunLongScenarioCreatesPlanningImportAutomationAndAgentRecords() {
+        assumeTrue(config.allowSetupBootstrap() && !config.hasLoginCredentials() && !config.hasWorkspaceContext(),
+                "Set only TRASCK_E2E_ALLOW_SETUP=true against an empty disposable stack for the first-run rehearsal");
+        RuntimeChecks.requireHttpService("Trasck backend", config.backendBaseUrl(), "/api/trasck/health", config.timeout());
+        RuntimeChecks.requireHttpService("Trasck frontend", config.frontendBaseUrl(), "/", config.timeout());
+
+        try (Playwright playwright = Playwright.create()) {
+            SetupBootstrap.BootstrapResult bootstrap = SetupBootstrap.tryBootstrap(playwright, config);
+            assumeTrue(bootstrap.status() == SetupBootstrap.BootstrapStatus.CREATED,
+                    "The first-run rehearsal requires an empty stack so it can create its own workspace/project");
+
+            try (AuthSession apiSession = AuthSession.login(playwright, config);
+                    ApiCleanup cleanup = new ApiCleanup();
+                    Browser browser = BrowserFactory.launch(playwright, config);
+                    BrowserSession browserSession = BrowserSession.start(browser, config, "frontend-disposable-first-run-long-scenario")) {
+                TestWorkspace workspace = new TestWorkspace(
+                        bootstrap.context().workspaceId(),
+                        bootstrap.context().projectId()
+                );
+                SampleDataFixture.SampleDataContext seed = SampleDataFixture.create(apiSession, workspace, cleanup);
+                String suffix = UniqueData.suffix();
+                Page page = browserSession.page();
+                installFrontendContext(page, workspace, seed);
+                loginThroughUi(page, bootstrap.context());
+
+                page.navigate("/planning");
+                assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Teams"))).isVisible();
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load").setExact(true)).click();
+                String teamName = "First Run Rehearsal Team " + suffix;
+                panel(page, "Teams").getByLabel("Name").fill(teamName);
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create team")).click();
+                assertThat(page.getByText(teamName).first()).isVisible();
+                JsonNode team = requireRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/teams", "name", teamName);
+                cleanup.delete(apiSession, "/api/v1/teams/" + team.path("id").asText());
+
+                page.navigate("/imports");
+                assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Import Job"))).isVisible();
+                String importScenario = "first-run-import-" + suffix;
+                panel(page, "Import Job").getByLabel("Config JSON").fill("""
+                        {
+                          "targetProjectId": "%s",
+                          "scenario": "%s"
+                        }
+                        """.formatted(workspace.projectId(), importScenario));
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create job")).click();
+                JsonNode importJob = requireImportJobByScenario(apiSession, workspace.workspaceId(), importScenario);
+                cleanup.add(() -> apiSession.post("/api/v1/import-jobs/" + importJob.path("id").asText() + "/cancel", Map.of()));
+                assertThat(page.getByText(importJob.path("id").asText()).first()).isVisible();
+                panel(page, "Parse").getByLabel("Source type").fill("row");
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Parse")).click();
+                assertThat(page.getByText("recordsParsed").first()).isVisible();
+
+                page.navigate("/automation");
+                assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Webhooks"))).isVisible();
+                String webhookName = "First Run Webhook " + suffix;
+                panel(page, "Webhooks").getByLabel("Name").fill(webhookName);
+                panel(page, "Webhooks").getByLabel("URL").fill("https://example.test/hooks/" + suffix);
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create webhook")).click();
+                assertThat(page.getByText(webhookName).first()).isVisible();
+                JsonNode webhook = requireRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/webhooks", "name", webhookName);
+                cleanup.delete(apiSession, "/api/v1/webhooks/" + webhook.path("id").asText());
+
+                String ruleName = "First Run Rule " + suffix;
+                panel(page, "Automation Rule").getByLabel("Name").fill(ruleName);
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create rule")).click();
+                assertThat(page.getByText(ruleName).first()).isVisible();
+                JsonNode rule = requireRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/automation-rules", "name", ruleName);
+                cleanup.delete(apiSession, "/api/v1/automation-rules/" + rule.path("id").asText());
+
+                page.navigate("/agents");
+                assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Provider"))).isVisible();
+                panel(page, "Agent Records").getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Load")).click();
+                String providerKey = "first-run-agent-" + suffix;
+                String providerName = "First Run Agent Provider " + suffix;
+                Locator providerPanel = panel(page, "Provider");
+                providerPanel.getByLabel("Key").fill(providerKey);
+                providerPanel.getByLabel("Display name").fill(providerName);
+                providerPanel.getByLabel("Dispatch").selectOption("managed");
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create provider")).click();
+                assertThat(page.getByText(providerName).first()).isVisible();
+                JsonNode provider = requireRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/agent-providers", "providerKey", providerKey);
+                cleanup.add(() -> apiSession.patch("/api/v1/agent-providers/" + provider.path("id").asText(), JsonSupport.object("enabled", false)));
+
+                String profileName = "First Run Agent Profile " + suffix;
+                Locator profilePanel = panel(page, "Profile");
+                profilePanel.getByLabel("Provider").selectOption(provider.path("id").asText());
+                profilePanel.getByLabel("Display name").fill(profileName);
+                profilePanel.getByLabel("Username").fill("first-run-agent-" + suffix);
+                profilePanel.getByLabel("Project IDs").fill(workspace.projectId());
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create profile")).click();
+                assertThat(page.getByText(profileName).first()).isVisible();
+                JsonNode profile = requireRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/agents", "displayName", profileName);
+                cleanup.add(() -> apiSession.patch("/api/v1/agents/" + profile.path("id").asText(), JsonSupport.object("status", "disabled")));
+
+                String repositoryName = "First Run Repository " + suffix;
+                Locator repositoryPanel = panel(page, "Repository");
+                repositoryPanel.getByLabel("Name").fill(repositoryName);
+                repositoryPanel.getByLabel("URL").fill("https://example.test/first-run/" + suffix + ".git");
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Connect")).click();
+                assertThat(page.getByText(repositoryName).first()).isVisible();
+                JsonNode repository = requireRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/repository-connections", "name", repositoryName);
+                cleanup.delete(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/repository-connections/" + repository.path("id").asText());
+
+                Locator taskPanel = panel(page, "Agent Task");
+                taskPanel.getByLabel("Work item").selectOption(seed.workItem().path("id").asText());
+                taskPanel.getByLabel("Agent profile").selectOption(profile.path("id").asText());
+                taskPanel.getByLabel("Repository").selectOption(repository.path("id").asText());
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Assign")).click();
+                assertThat(page.getByText("running").first()).isVisible();
+                taskPanel.locator("button[title='Cancel']").click();
+                assertThat(page.getByText("canceled").first()).isVisible();
+
+                browserSession.screenshot();
+                browserSession.assertNoConsoleErrors();
+            }
+        }
+    }
+
+    private void loginThroughUi(Page page, SetupBootstrap.BootstrapContext login) {
+        page.navigate("/auth");
+        assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Sign In"))).isVisible();
+        page.getByLabel("Identifier").fill(login.loginIdentifier());
+        page.getByLabel("Password").fill(login.loginPassword());
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Login")).click();
+        assertThat(page.getByText("human").first()).isVisible();
+        assertNull(page.evaluate("() => localStorage.getItem('trasck.accessToken')"));
+    }
+
     private void installFrontendContext(Page page, TestWorkspace workspace, SampleDataFixture.SampleDataContext seed) {
         String script = "localStorage.setItem('trasck.apiBaseUrl', '" + jsString(config.backendBaseUrl().toString()) + "');"
                 + "localStorage.setItem('trasck.workspaceId', '" + jsString(workspace.workspaceId()) + "');"
@@ -93,7 +227,39 @@ class FrontendDisposableFirstRunRehearsalTest {
         page.addInitScript(script);
     }
 
+    private Locator panel(Page page, String title) {
+        return page.locator("xpath=//section[contains(concat(' ', normalize-space(@class), ' '), ' panel ')][.//h2[normalize-space()="
+                + xpathLiteral(title) + "]]").first();
+    }
+
+    private JsonNode requireImportJobByScenario(AuthSession session, String workspaceId, String scenario) {
+        JsonNode rows = session.requireJson(session.get("/api/v1/workspaces/" + workspaceId + "/import-jobs"), 200);
+        for (JsonNode row : rows) {
+            if (scenario.equals(row.path("config").path("scenario").asText())) {
+                return row;
+            }
+        }
+        throw new AssertionError("Could not find import job for scenario " + scenario + ": " + rows);
+    }
+
+    private JsonNode requireRecordByField(AuthSession session, String path, String field, String value) {
+        JsonNode rows = session.requireJson(session.get(path), 200);
+        for (JsonNode row : rows) {
+            if (value.equals(row.path(field).asText())) {
+                return row;
+            }
+        }
+        throw new AssertionError("Could not find record with " + field + "=" + value + " from " + path + ": " + rows);
+    }
+
     private String jsString(String value) {
         return value == null ? "" : value.replace("\\", "\\\\").replace("'", "\\'");
+    }
+
+    private String xpathLiteral(String value) {
+        if (!value.contains("'")) {
+            return "'" + value + "'";
+        }
+        return "\"" + value.replace("\"", "") + "\"";
     }
 }

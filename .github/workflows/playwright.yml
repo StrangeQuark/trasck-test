@@ -28,16 +28,25 @@ jobs:
     name: Managed Production Security
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      TRASCK_BACKEND_REPOSITORY: ${{ vars.TRASCK_BACKEND_REPOSITORY }}
     steps:
       - name: Check out trasck-test
         uses: actions/checkout@v4
         with:
           path: trasck-test
 
+      - name: Validate backend repository variable
+        run: |
+          if [ -z "$TRASCK_BACKEND_REPOSITORY" ]; then
+            echo "Repository variable TRASCK_BACKEND_REPOSITORY is required, for example your-org/trasck." >&2
+            exit 1
+          fi
+
       - name: Check out Trasck backend
         uses: actions/checkout@v4
         with:
-          repository: ${{ vars.TRASCK_BACKEND_REPOSITORY || format('{0}/trasck', github.repository_owner) }}
+          repository: ${{ vars.TRASCK_BACKEND_REPOSITORY }}
           path: trasck
 
       - name: Set up Java

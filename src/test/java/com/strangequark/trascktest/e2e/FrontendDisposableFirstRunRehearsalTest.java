@@ -111,7 +111,6 @@ class FrontendDisposableFirstRunRehearsalTest {
                 SampleDataFixture.SampleDataContext seed = SampleDataFixture.create(apiSession, workspace, cleanup);
                 String suffix = UniqueData.suffix();
                 Page page = browserSession.page();
-                browserSession.ignoreConsoleErrorsContaining("/api/v1/import-jobs/");
                 installFrontendContext(page, workspace, seed);
                 loginThroughUi(page, bootstrap.context());
 
@@ -119,7 +118,7 @@ class FrontendDisposableFirstRunRehearsalTest {
                 assertThat(page.locator("xpath=//h2[normalize-space()='Teams']").first()).isVisible();
                 page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load").setExact(true)).click();
                 String teamName = "First Run Rehearsal Team " + suffix;
-                panel(page, "Teams").getByLabel("Name").fill(teamName);
+                panel(page, "Teams").getByLabel("Team name").fill(teamName);
                 page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create team")).click();
                 JsonNode team = waitForRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/teams", "name", teamName);
                 cleanup.delete(apiSession, "/api/v1/teams/" + team.path("id").asText());
@@ -127,16 +126,11 @@ class FrontendDisposableFirstRunRehearsalTest {
                 page.navigate("/imports");
                 assertThat(page.locator("xpath=//h2[normalize-space()='Import Job']").first()).isVisible();
                 String importScenario = "first-run-import-" + suffix;
-                panel(page, "Import Job").getByLabel("Config JSON").fill("""
-                        {
-                          "targetProjectId": "%s",
-                          "scenario": "%s"
-                        }
-                        """.formatted(workspace.projectId(), importScenario));
+                panel(page, "Import Job").getByLabel("Scenario").fill(importScenario);
                 page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create job")).click();
                 JsonNode importJob = waitForImportJobByScenario(apiSession, workspace.workspaceId(), importScenario);
                 cleanup.add(() -> apiSession.post("/api/v1/import-jobs/" + importJob.path("id").asText() + "/cancel", Map.of()));
-                panel(page, "Parse").getByLabel("Source type").fill("row");
+                panel(page, "Parse").getByLabel("Source type").selectOption("row");
                 page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Parse")).click();
                 assertThat(page.getByText("recordsParsed").first()).isVisible();
 
@@ -173,7 +167,7 @@ class FrontendDisposableFirstRunRehearsalTest {
                 profilePanel.getByLabel("Provider").selectOption(provider.path("id").asText());
                 profilePanel.getByLabel("Display name").fill(profileName);
                 profilePanel.getByLabel("Username").fill("first-run-agent-" + suffix);
-                profilePanel.getByLabel("Project IDs").fill(workspace.projectId());
+                profilePanel.getByLabel("Project access").selectOption("current_project");
                 page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create profile")).click();
                 JsonNode profile = waitForRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/agents", "displayName", profileName);
                 cleanup.add(() -> apiSession.post("/api/v1/agents/" + profile.path("id").asText() + "/deactivate", Map.of()));

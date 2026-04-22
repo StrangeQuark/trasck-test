@@ -76,7 +76,7 @@ class AgentRealWorkflowTest {
             profilePanel.getByLabel("Provider").selectOption(providerId);
             profilePanel.getByLabel("Display name").fill(profileName);
             profilePanel.getByLabel("Username").fill("browser-agent-" + suffix);
-            profilePanel.getByLabel("Project IDs").fill(workspace.projectId());
+            profilePanel.getByLabel("Project access").selectOption("current_project");
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create profile")).click();
             JsonNode profile = waitForRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/agents", "displayName", profileName);
             String profileId = profile.path("id").asText();

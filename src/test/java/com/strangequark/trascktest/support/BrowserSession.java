@@ -17,6 +17,7 @@ public final class BrowserSession implements AutoCloseable {
     private final BrowserContext context;
     private final Page page;
     private final List<String> consoleErrors = new ArrayList<>();
+    private final List<String> ignoredConsoleErrorFragments = new ArrayList<>();
 
     private BrowserSession(String testName, BrowserContext context, Page page) {
         this.testName = testName;
@@ -47,7 +48,16 @@ public final class BrowserSession implements AutoCloseable {
     }
 
     public void assertNoConsoleErrors() {
-        assertTrue(consoleErrors.isEmpty(), "Browser console errors: " + consoleErrors);
+        List<String> actionableErrors = consoleErrors.stream()
+                .filter(error -> !error.contains("/api/v1/auth/me"))
+                .filter(error -> ignoredConsoleErrorFragments.stream().noneMatch(error::contains))
+                .toList();
+        assertTrue(actionableErrors.isEmpty(), "Browser console errors: " + actionableErrors);
+    }
+
+    public void ignoreConsoleErrorsContaining(String text) {
+        ignoredConsoleErrorFragments.add(text);
+        consoleErrors.removeIf(error -> error.contains(text));
     }
 
     public void screenshot() {

@@ -334,7 +334,7 @@ class FrontendShellTest {
 
             page.navigate("/agents");
 
-            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Provider"))).isVisible();
+            assertThat(page.locator("xpath=//h2[normalize-space()='Provider']").first()).isVisible();
             assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Agent Records"))).isVisible();
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load")).last().click();
             assertThat(page.getByText("Browser Agent Provider").first()).isVisible();
@@ -493,7 +493,7 @@ class FrontendShellTest {
             );
 
             page.navigate("/imports");
-            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Import Job"))).isVisible();
+            assertThat(page.locator("xpath=//h2[normalize-space()='Import Job']").first()).isVisible();
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load").setExact(true)).click();
             assertThat(page.getByText("Browser imported story").first()).isVisible();
 
@@ -1173,7 +1173,7 @@ class FrontendShellTest {
     private static void mockCsrf(Page page) {
         page.route("**/api/v1/auth/csrf", route -> fulfillJson(route, 200, """
                 {
-                  "headerName": "X-CSRF-TOKEN",
+                  "headerName": "X-XSRF-TOKEN",
                   "parameterName": "_csrf",
                   "token": "browser-test-csrf"
                 }

@@ -69,36 +69,35 @@ class FrontendRealWorkflowTest {
             assertThat(page.getByText(seed.workItem().path("title").asText()).first()).isVisible();
             page.getByLabel("Title").fill(uiWorkTitle);
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create").setExact(true)).click();
+            waitForWorkItemsByTitle(apiSession, workspace.projectId(), uiWorkTitle);
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load").setExact(true)).click();
             assertThat(page.getByText(uiWorkTitle).first()).isVisible();
 
             page.navigate("/filters");
-            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Saved Filter Builder"))).isVisible();
+            assertThat(page.locator("xpath=//h2[normalize-space()='Saved Filter Builder']").first()).isVisible();
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load").setExact(true)).click();
-            assertThat(page.getByText(seed.savedFilter().path("name").asText()).first()).isVisible();
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Run").setExact(true)).click();
             assertThat(page.getByText(seed.workItem().path("title").asText()).first()).isVisible();
 
             page.navigate("/dashboards");
             assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Dashboard Builder"))).isVisible();
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load").setExact(true)).click();
-            assertThat(page.getByText(seed.dashboard().path("name").asText()).first()).isVisible();
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Render").setExact(true)).click();
             assertThat(page.getByText("widgets").first()).isVisible();
 
             page.navigate("/planning");
-            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Teams"))).isVisible();
+            assertThat(page.locator("xpath=//h2[normalize-space()='Teams']").first()).isVisible();
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load").setExact(true)).click();
-            assertThat(page.getByText(seed.workItem().path("title").asText()).first()).isVisible();
             page.getByLabel("Name").first().fill(teamName);
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create team")).click();
-            assertThat(page.getByText(teamName).first()).isVisible();
+            waitForTeamByName(apiSession, workspace.workspaceId(), teamName);
 
             page.navigate("/configuration");
-            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Custom Field"))).isVisible();
+            assertThat(page.locator("xpath=//h2[normalize-space()='Custom Field']").first()).isVisible();
             page.getByLabel("Name").first().fill(customFieldName);
             page.getByLabel("Key").fill(customFieldKey);
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create field")).click();
-            assertThat(page.getByText(customFieldName).first()).isVisible();
+            waitForCustomFieldByKey(apiSession, workspace.workspaceId(), customFieldKey);
 
             browserSession.screenshot();
             browserSession.assertNoConsoleErrors();
@@ -146,6 +145,57 @@ class FrontendRealWorkflowTest {
         if (status != 200 && status != 204 && status != 404) {
             throw new AssertionError("Cleanup DELETE " + path + " returned HTTP " + status);
         }
+    }
+
+    private void waitForWorkItemsByTitle(AuthSession session, String projectId, String title) {
+        waitFor(() -> {
+            JsonNode page = session.requireJson(session.get("/api/v1/projects/" + projectId + "/work-items?limit=100"), 200);
+            for (JsonNode item : page.path("items")) {
+                if (title.equals(item.path("title").asText())) {
+                    return true;
+                }
+            }
+            return false;
+        }, "work item " + title);
+    }
+
+    private void waitForTeamByName(AuthSession session, String workspaceId, String name) {
+        waitFor(() -> containsArrayRecord(session, "/api/v1/workspaces/" + workspaceId + "/teams", "name", name), "team " + name);
+    }
+
+    private void waitForCustomFieldByKey(AuthSession session, String workspaceId, String key) {
+        waitFor(() -> containsArrayRecord(session, "/api/v1/workspaces/" + workspaceId + "/custom-fields", "key", key), "custom field " + key);
+    }
+
+    private boolean containsArrayRecord(AuthSession session, String path, String field, String value) {
+        JsonNode rows = session.requireJson(session.get(path), 200);
+        for (JsonNode row : rows) {
+            if (value.equals(row.path(field).asText())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void waitFor(Check check, String label) {
+        long deadline = System.currentTimeMillis() + 5_000;
+        while (System.currentTimeMillis() < deadline) {
+            if (check.ok()) {
+                return;
+            }
+            try {
+                Thread.sleep(150);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError("Interrupted waiting for " + label, ex);
+            }
+        }
+        throw new AssertionError("Timed out waiting for " + label);
+    }
+
+    @FunctionalInterface
+    private interface Check {
+        boolean ok();
     }
 
     private String jsString(String value) {

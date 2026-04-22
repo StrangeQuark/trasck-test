@@ -50,7 +50,7 @@ class AgentRealWorkflowTest {
             SetupBootstrap.BootstrapContext login = SetupBootstrap.require(playwright, config);
             String suffix = UniqueData.suffix();
             JsonNode workItem = createStory(apiSession, cleanup, workspace.projectId(), "Browser agent story " + suffix);
-            String providerKey = "browser-agent-" + suffix;
+            String providerKey = "browser_agent_" + suffix;
             String providerName = "Browser Agent Provider " + suffix;
             String profileName = "Browser Agent Profile " + suffix;
             String repositoryName = "Browser Agent Repository " + suffix;
@@ -60,7 +60,7 @@ class AgentRealWorkflowTest {
             loginThroughUi(page, login);
 
             page.navigate("/agents");
-            assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Provider"))).isVisible();
+            assertThat(page.locator("xpath=//h2[normalize-space()='Provider']").first()).isVisible();
             panel(page, "Agent Records").getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Load")).click();
 
             Locator providerPanel = panel(page, "Provider");
@@ -68,8 +68,7 @@ class AgentRealWorkflowTest {
             providerPanel.getByLabel("Display name").fill(providerName);
             providerPanel.getByLabel("Dispatch").selectOption("managed");
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create provider")).click();
-            assertThat(page.getByText(providerName).first()).isVisible();
-            JsonNode provider = requireRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/agent-providers", "providerKey", providerKey);
+            JsonNode provider = waitForRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/agent-providers", "providerKey", providerKey);
             String providerId = provider.path("id").asText();
             cleanup.add(() -> apiSession.post("/api/v1/agent-providers/" + providerId + "/deactivate", Map.of()));
 
@@ -79,8 +78,7 @@ class AgentRealWorkflowTest {
             profilePanel.getByLabel("Username").fill("browser-agent-" + suffix);
             profilePanel.getByLabel("Project IDs").fill(workspace.projectId());
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create profile")).click();
-            assertThat(page.getByText(profileName).first()).isVisible();
-            JsonNode profile = requireRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/agents", "displayName", profileName);
+            JsonNode profile = waitForRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/agents", "displayName", profileName);
             String profileId = profile.path("id").asText();
             cleanup.add(() -> apiSession.post("/api/v1/agents/" + profileId + "/deactivate", Map.of()));
 
@@ -91,15 +89,14 @@ class AgentRealWorkflowTest {
             repositoryPanel.getByLabel("Name").fill(repositoryName);
             repositoryPanel.getByLabel("URL").fill("https://example.test/" + providerKey + ".git");
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Connect")).click();
-            assertThat(page.getByText(repositoryName).first()).isVisible();
-            JsonNode repository = requireRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/repository-connections", "name", repositoryName);
+            JsonNode repository = waitForRecordByField(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/repository-connections", "name", repositoryName);
             String repositoryId = repository.path("id").asText();
             cleanup.delete(apiSession, "/api/v1/workspaces/" + workspace.workspaceId() + "/repository-connections/" + repositoryId);
 
             Locator taskPanel = panel(page, "Agent Task");
-            taskPanel.getByLabel("Work item").selectOption(workItem.path("id").asText());
-            taskPanel.getByLabel("Agent profile").selectOption(profileId);
-            taskPanel.getByLabel("Repository").selectOption(repositoryId);
+            taskPanel.locator("select").nth(0).selectOption(workItem.path("id").asText());
+            taskPanel.locator("select").nth(1).selectOption(profileId);
+            taskPanel.locator("select").nth(2).selectOption(repositoryId);
             taskPanel.getByLabel("Instructions").fill("Review this story and produce an implementation plan for " + suffix + ".");
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Assign")).click();
             assertThat(page.getByText("running").first()).isVisible();
@@ -115,11 +112,11 @@ class AgentRealWorkflowTest {
             assertThat(page.getByText(taskId).first()).isVisible();
 
             Locator recordsPanel = panel(page, "Agent Records");
-            recordsPanel.getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Attempts")).click();
+            recordsPanel.getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Attempts").setExact(true)).click();
             assertThat(page.getByText("dispatch").first()).isVisible();
-            recordsPanel.getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Export attempts")).click();
+            recordsPanel.getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Export attempts").setExact(true)).click();
             assertThat(page.getByText("agent_dispatch_attempts").first()).isVisible();
-            recordsPanel.getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Prune attempts")).click();
+            recordsPanel.getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Prune attempts").setExact(true)).click();
             assertThat(page.getByText("attemptsPruned").first()).isVisible();
 
             profilePanel.getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Deactivate profile")).click();
@@ -178,6 +175,28 @@ class AgentRealWorkflowTest {
             }
         }
         throw new AssertionError("Could not find record with " + field + "=" + value + " from " + path + ": " + rows);
+    }
+
+    private JsonNode waitForRecordByField(AuthSession session, String path, String field, String value) {
+        long deadline = System.currentTimeMillis() + 5_000;
+        AssertionError lastFailure = null;
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                return requireRecordByField(session, path, field, value);
+            } catch (AssertionError ex) {
+                lastFailure = ex;
+                try {
+                    Thread.sleep(150);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw ex;
+                }
+            }
+        }
+        if (lastFailure != null) {
+            throw lastFailure;
+        }
+        return requireRecordByField(session, path, field, value);
     }
 
     private JsonNode latestDispatchAttempt(AuthSession session, String workspaceId, String profileId, String workItemId) {

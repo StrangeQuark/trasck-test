@@ -48,10 +48,75 @@ class AgentWorkerCallbackApiTest {
                     "agent-profiles-unauthenticated");
             assertUnauthorized(request.get("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-dispatch-attempts"),
                     "agent-dispatch-attempts-unauthenticated");
+            assertUnauthorized(request.get("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs"),
+                    "agent-cli-runs-unauthenticated");
+            assertUnauthorized(request.get("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs/00000000-0000-0000-0000-000000000001/download"),
+                    "agent-cli-run-download-unauthenticated");
+            assertUnauthorized(request.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs/00000000-0000-0000-0000-000000000001"),
+                    "agent-cli-run-delete-unauthenticated");
+            assertUnauthorized(request.post("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs/prune",
+                    RequestOptions.create().setData(JsonSupport.object("retentionDays", 7))),
+                    "agent-cli-run-prune-unauthenticated");
             assertUnauthorized(request.post("/api/v1/work-items/00000000-0000-0000-0000-000000000001/assign-agent",
                     RequestOptions.create().setData(JsonSupport.object("agentProfileId", "00000000-0000-0000-0000-000000000002"))),
                     "assign-agent-unauthenticated");
             request.dispose();
+        }
+    }
+
+    @Test
+    void codexAndClaudeProvidersExposeManualCliRuntimeCredentialAndProfileSetup() {
+        assumeTrue(config.canResolveAuthenticatedWorkspace(),
+                "Set login/workspace/project env values or TRASCK_E2E_ALLOW_SETUP=true for Codex/Claude provider readiness coverage");
+        RuntimeChecks.requireHttpService("Trasck backend", config.backendBaseUrl(), "/api/trasck/health", config.timeout());
+
+        try (Playwright playwright = Playwright.create();
+                AuthSession session = AuthSession.login(playwright, config);
+                ApiCleanup cleanup = new ApiCleanup()) {
+            TestWorkspace workspace = TestWorkspace.require(playwright, config);
+            String suffix = UniqueData.suffix();
+
+            JsonNode codexProvider = createCliProvider(session, cleanup, workspace.workspaceId(), "codex", "codex-local", "pw-codex-" + suffix, "Playwright Codex " + suffix);
+            String codexProviderId = codexProvider.path("id").asText();
+            JsonNode codexPreview = session.requireJson(session.post(
+                    "/api/v1/agent-providers/" + codexProviderId + "/runtime-preview",
+                    JsonSupport.object("action", "dispatched")
+            ), 200);
+            assertTrue(codexPreview.path("valid").asBoolean(), codexPreview.toString());
+            assertEquals("cli_worker", codexPreview.path("runtimeMode").asText(), codexPreview.toString());
+            assertEquals("backend_cli_worker", codexPreview.path("transport").asText(), codexPreview.toString());
+            JsonNode codexCredential = session.requireJson(session.post(
+                    "/api/v1/agent-providers/" + codexProviderId + "/credentials",
+                    JsonSupport.object(
+                            "credentialType", "codex_api_key",
+                            "secret", "sk-codex-playwright-secret-" + suffix,
+                            "metadata", JsonSupport.object("authScheme", "bearer", "environmentVariable", "CODEX_API_KEY")
+                    )
+            ), 201);
+            assertEquals("codex_api_key", codexCredential.path("credentialType").asText(), codexCredential.toString());
+            assertFalse(codexCredential.toString().contains("sk-codex-playwright-secret-" + suffix), codexCredential.toString());
+            createAgentProfile(session, cleanup, workspace.workspaceId(), workspace.projectId(), codexProviderId, "Playwright Codex Agent " + suffix, "pw-codex-agent-" + suffix);
+
+            JsonNode claudeProvider = createCliProvider(session, cleanup, workspace.workspaceId(), "claude_code", "claude-code-local", "pw-claude-" + suffix, "Playwright Claude Code " + suffix);
+            String claudeProviderId = claudeProvider.path("id").asText();
+            JsonNode claudePreview = session.requireJson(session.post(
+                    "/api/v1/agent-providers/" + claudeProviderId + "/runtime-preview",
+                    JsonSupport.object("action", "dispatched")
+            ), 200);
+            assertTrue(claudePreview.path("valid").asBoolean(), claudePreview.toString());
+            assertEquals("cli_worker", claudePreview.path("runtimeMode").asText(), claudePreview.toString());
+            assertEquals("backend_cli_worker", claudePreview.path("transport").asText(), claudePreview.toString());
+            JsonNode claudeCredential = session.requireJson(session.post(
+                    "/api/v1/agent-providers/" + claudeProviderId + "/credentials",
+                    JsonSupport.object(
+                            "credentialType", "anthropic_api_key",
+                            "secret", "sk-ant-playwright-secret-" + suffix,
+                            "metadata", JsonSupport.object("authScheme", "api_key", "environmentVariable", "ANTHROPIC_API_KEY")
+                    )
+            ), 201);
+            assertEquals("anthropic_api_key", claudeCredential.path("credentialType").asText(), claudeCredential.toString());
+            assertFalse(claudeCredential.toString().contains("sk-ant-playwright-secret-" + suffix), claudeCredential.toString());
+            createAgentProfile(session, cleanup, workspace.workspaceId(), workspace.projectId(), claudeProviderId, "Playwright Claude Agent " + suffix, "pw-claude-agent-" + suffix);
         }
     }
 
@@ -280,12 +345,79 @@ class AgentWorkerCallbackApiTest {
                     JsonSupport.object("agentTaskId", taskId, "retentionDays", 1, "exportBeforePrune", false)
             ), 200);
             assertEquals(0, dispatchPrune.path("attemptsPruned").asInt(), dispatchPrune.toString());
+            JsonNode cliRuns = session.requireJson(session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs"), 200);
+            assertTrue(cliRuns.isArray(), cliRuns.toString());
+            APIResponse missingCliArchive = session.get("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs/" + taskId + "/download");
+            assertEquals(404, missingCliArchive.status(), missingCliArchive.text());
+            APIResponse missingCliDelete = session.delete("/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs/" + taskId);
+            assertEquals(404, missingCliDelete.status(), missingCliDelete.text());
+            JsonNode cliPrune = session.requireJson(session.post(
+                    "/api/v1/workspaces/" + workspace.workspaceId() + "/agent-cli-runs/prune",
+                    JsonSupport.object("retentionDays", 0)
+            ), 200);
+            assertEquals(0, cliPrune.path("deletedRuns").asInt(), cliPrune.toString());
 
             JsonNode deactivatedProfile = session.requireJson(session.post("/api/v1/agents/" + profileId + "/deactivate", Map.of()), 200);
             assertEquals("disabled", deactivatedProfile.path("status").asText(), deactivatedProfile.toString());
             JsonNode deactivatedProvider = session.requireJson(session.post("/api/v1/agent-providers/" + providerId + "/deactivate", Map.of()), 200);
             assertFalse(deactivatedProvider.path("enabled").asBoolean(), deactivatedProvider.toString());
         }
+    }
+
+    private JsonNode createCliProvider(
+            AuthSession session,
+            ApiCleanup cleanup,
+            String workspaceId,
+            String providerType,
+            String commandProfile,
+            String providerKey,
+            String displayName
+    ) {
+        JsonNode provider = session.requireJson(session.post(
+                "/api/v1/workspaces/" + workspaceId + "/agent-providers",
+                JsonSupport.object(
+                        "providerKey", providerKey,
+                        "providerType", providerType,
+                        "displayName", displayName,
+                        "dispatchMode", "managed",
+                        "enabled", true,
+                        "config", JsonSupport.object(
+                                "runtime", JsonSupport.object(
+                                        "mode", "cli_worker",
+                                        "externalExecutionEnabled", true,
+                                        "cliWorker", JsonSupport.object("commandProfile", commandProfile)
+                                )
+                        )
+                )
+        ), 201);
+        cleanup.add(() -> session.post("/api/v1/agent-providers/" + provider.path("id").asText() + "/deactivate", Map.of()));
+        assertEquals(providerType, provider.path("providerType").asText(), provider.toString());
+        assertFalse(provider.toString().contains("BEGIN PRIVATE KEY"), provider.toString());
+        return provider;
+    }
+
+    private JsonNode createAgentProfile(
+            AuthSession session,
+            ApiCleanup cleanup,
+            String workspaceId,
+            String projectId,
+            String providerId,
+            String displayName,
+            String username
+    ) {
+        JsonNode profile = session.requireJson(session.post(
+                "/api/v1/workspaces/" + workspaceId + "/agents",
+                JsonSupport.object(
+                        "providerId", providerId,
+                        "displayName", displayName,
+                        "username", username,
+                        "projectIds", List.of(projectId),
+                        "maxConcurrentTasks", 1
+                )
+        ), 201);
+        cleanup.add(() -> session.post("/api/v1/agents/" + profile.path("id").asText() + "/deactivate", Map.of()));
+        assertEquals(providerId, profile.path("providerId").asText(), profile.toString());
+        return profile;
     }
 
     private JsonNode createStory(AuthSession session, ApiCleanup cleanup, String projectId, String title) {

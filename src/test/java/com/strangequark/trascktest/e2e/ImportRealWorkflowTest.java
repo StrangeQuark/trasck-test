@@ -14,7 +14,6 @@ import com.strangequark.trascktest.support.ApiCleanup;
 import com.strangequark.trascktest.support.AuthSession;
 import com.strangequark.trascktest.support.BrowserFactory;
 import com.strangequark.trascktest.support.BrowserSession;
-import com.strangequark.trascktest.support.JsonSupport;
 import com.strangequark.trascktest.support.RuntimeChecks;
 import com.strangequark.trascktest.support.SetupBootstrap;
 import com.strangequark.trascktest.support.TestWorkspace;
@@ -43,6 +42,7 @@ class ImportRealWorkflowTest extends RealFrontendWorkflowSupport {
             SetupBootstrap.BootstrapContext login = SetupBootstrap.require(playwright, config);
             String suffix = UniqueData.suffix();
             String importedTitle = "Browser imported story " + suffix;
+            String importSource = "browser-real-" + suffix;
             cleanup.add(() -> deleteWorkItemsByTitle(apiSession, workspace.projectId(), importedTitle));
 
             Page page = browserSession.page();
@@ -67,7 +67,7 @@ class ImportRealWorkflowTest extends RealFrontendWorkflowSupport {
             String templateName = "Browser Import Template " + suffix;
             Locator templatePanel = panel(page, "Mapping Template");
             templatePanel.getByLabel("Name", new Locator.GetByLabelOptions().setExact(true)).fill(templateName);
-            templatePanel.getByLabel("Source type").fill("row");
+            templatePanel.getByLabel("Source type").selectOption("row");
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create template")).click();
             JsonNode template = waitForRecordByField(apiSession,
                     "/api/v1/workspaces/" + workspace.workspaceId() + "/import-mapping-templates",
@@ -76,41 +76,32 @@ class ImportRealWorkflowTest extends RealFrontendWorkflowSupport {
             String templateId = template.path("id").asText();
             cleanup.delete(apiSession, "/api/v1/import-mapping-templates/" + templateId);
 
-            JsonNode importJob = apiSession.requireJson(apiSession.post(
-                    "/api/v1/workspaces/" + workspace.workspaceId() + "/import-jobs",
-                    JsonSupport.object(
-                            "provider", "csv",
-                            "config", JsonSupport.object("targetProjectId", workspace.projectId(), "source", "browser-real-" + suffix)
-                    )
-            ), 201);
+            Locator jobPanel = panel(page, "Import Job");
+            jobPanel.getByLabel("Provider").selectOption("csv");
+            jobPanel.getByLabel("Source label").fill(importSource);
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create job")).click();
+            JsonNode importJob = waitForImportJobByConfigSource(apiSession, workspace.workspaceId(), importSource);
             String importJobId = importJob.path("id").asText();
             cleanup.add(() -> postIgnoringStatus(apiSession, "/api/v1/import-jobs/" + importJobId + "/cancel"));
 
-            apiSession.requireJson(apiSession.post("/api/v1/import-jobs/" + importJobId + "/start", java.util.Map.of()), 200);
-            apiSession.requireJson(apiSession.post(
-                    "/api/v1/import-jobs/" + importJobId + "/parse",
-                    JsonSupport.object(
-                            "contentType", "text/csv",
-                            "sourceType", "row",
-                            "content", """
-                                    id,title,type,status,description,visibility
-                                    BROWSER-%s,%s,Story,Open,Created through the browser import workflow,Public
-                                    """.formatted(suffix, importedTitle)
-                    )
-            ), 200);
-            apiSession.requireJson(apiSession.post(
-                    "/api/v1/import-jobs/" + importJobId + "/materialize",
-                    JsonSupport.object(
-                            "mappingTemplateId", templateId,
-                            "projectId", workspace.projectId(),
-                            "limit", 5,
-                            "updateExisting", false
-                    )
-            ), 200);
+            Locator parsePanel = panel(page, "Parse");
+            parsePanel.getByLabel("Import job").selectOption(importJobId);
+            parsePanel.getByLabel("Source type").selectOption("row");
+            parsePanel.getByLabel("Content").fill("""
+                    id,title,type,status,description,visibility
+                    BROWSER-%s,%s,Story,Open,Created through the browser import workflow,Public
+                    """.formatted(suffix, importedTitle));
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Parse")).click();
+            assertThat(page.getByText("recordsParsed").first()).isVisible();
+
+            Locator materializePanel = panel(page, "Materialize");
+            materializePanel.getByLabel("Import job").selectOption(importJobId);
+            materializePanel.getByLabel("Template").selectOption(templateId);
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Materialize")).click();
+            assertThat(page.getByText("recordsMaterialized").first()).isVisible();
             assertFalse(workItemsByTitle(apiSession, workspace.projectId(), importedTitle).isEmpty());
 
             browserSession.screenshot();
-            browserSession.ignoreConsoleErrorsContaining("/api/v1/import-jobs/");
             browserSession.assertNoConsoleErrors();
         }
     }

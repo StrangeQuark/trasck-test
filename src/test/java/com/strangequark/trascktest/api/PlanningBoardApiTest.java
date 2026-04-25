@@ -180,10 +180,13 @@ class PlanningBoardApiTest {
                     "name", "Playwright Board Updated " + suffix
             )), 200);
             assertEquals("Playwright Board Updated " + suffix, updatedBoard.path("name").asText(), updatedBoard.toString());
+            JsonNode statusOptions = session.requireJson(session.get("/api/v1/boards/" + boardId + "/status-options"), 200);
+            assertTrue(statusOptions.isArray() && statusOptions.size() > 0, statusOptions.toString());
+            String boardStatusId = findStatusId(statusOptions, "open");
 
             APIResponse columnResponse = session.post("/api/v1/boards/" + boardId + "/columns", JsonSupport.object(
                     "name", "Playwright Column",
-                    "statusIds", List.of(),
+                    "statusIds", List.of(boardStatusId),
                     "position", 99,
                     "doneColumn", false
             ));
@@ -231,6 +234,33 @@ class PlanningBoardApiTest {
                     "teamId", teamId
             )), 200);
             assertEquals(teamId, teamAssigned.path("teamId").asText(), teamAssigned.toString());
+            JsonNode peerTeamAssigned = session.requireJson(session.post("/api/v1/work-items/" + boardPeerId + "/team", JsonSupport.object(
+                    "teamId", teamId
+            )), 200);
+            assertEquals(teamId, peerTeamAssigned.path("teamId").asText(), peerTeamAssigned.toString());
+
+            JsonNode boardScopeIteration = session.requireJson(session.post("/api/v1/projects/" + workspace.projectId() + "/iterations", JsonSupport.object(
+                    "name", "Playwright Board Scope Sprint " + suffix,
+                    "teamId", teamId,
+                    "startDate", "2026-05-06",
+                    "endDate", "2026-05-20"
+            )), 201);
+            String boardScopeIterationId = boardScopeIteration.path("id").asText();
+            cleanup.delete(session, "/api/v1/iterations/" + boardScopeIterationId);
+            session.requireJson(session.post("/api/v1/iterations/" + boardScopeIterationId + "/work-items", JsonSupport.object(
+                    "workItemId", boardStoryId
+            )), 201);
+
+            JsonNode iterationBoard = session.requireJson(session.get("/api/v1/boards/" + boardId + "/work-items?limitPerColumn=50&iterationId="
+                    + boardScopeIterationId + "&teamId=" + teamId + "&viewMode=iteration"), 200);
+            assertTrue(containsBoardWorkItem(iterationBoard, boardStoryId), iterationBoard.toString());
+            assertTrue(!containsBoardWorkItem(iterationBoard, boardPeerId), iterationBoard.toString());
+
+            JsonNode backlogBoard = session.requireJson(session.get("/api/v1/boards/" + boardId + "/work-items?limitPerColumn=50&iterationId="
+                    + boardScopeIterationId + "&teamId=" + teamId + "&viewMode=backlog"), 200);
+            assertTrue(!containsBoardWorkItem(backlogBoard, boardStoryId), backlogBoard.toString());
+            assertTrue(containsBoardWorkItem(backlogBoard, boardPeerId), backlogBoard.toString());
+
             assertEquals(boardStoryId, session.requireJson(session.post("/api/v1/boards/" + boardId + "/work-items/" + boardStoryId + "/rank", JsonSupport.object(
                     "previousWorkItemId", boardPeerId
             )), 200).path("id").asText());
@@ -254,5 +284,25 @@ class PlanningBoardApiTest {
         ));
         ApiDiagnostics.writeSnippet("planning-board-work-item-create", "POST project work item", response);
         return session.requireJson(response, 201);
+    }
+
+    private boolean containsBoardWorkItem(JsonNode boardResponse, String workItemId) {
+        for (JsonNode column : boardResponse.path("columns")) {
+            for (JsonNode workItem : column.path("workItems")) {
+                if (workItemId.equals(workItem.path("id").asText())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private String findStatusId(JsonNode statusOptions, String key) {
+        for (JsonNode option : statusOptions) {
+            if (key.equals(option.path("key").asText())) {
+                return option.path("id").asText();
+            }
+        }
+        return statusOptions.get(0).path("id").asText();
     }
 }

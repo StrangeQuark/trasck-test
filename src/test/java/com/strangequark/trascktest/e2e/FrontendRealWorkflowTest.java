@@ -86,9 +86,10 @@ class FrontendRealWorkflowTest {
             assertThat(page.getByText("widgets").first()).isVisible();
 
             page.navigate("/planning");
+            assertThat(page.locator("xpath=//h2[normalize-space()='Sprint Flow']").first()).isVisible();
+            page.navigate("/planning/admin");
             assertThat(page.locator("xpath=//h2[normalize-space()='Teams']").first()).isVisible();
-            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load").setExact(true)).click();
-            page.getByLabel("Name").first().fill(teamName);
+            page.getByLabel("Team name").fill(teamName);
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create team")).click();
             waitForTeamByName(apiSession, workspace.workspaceId(), teamName);
 

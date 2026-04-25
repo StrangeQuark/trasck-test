@@ -15,6 +15,7 @@ import com.strangequark.trascktest.support.ApiCleanup;
 import com.strangequark.trascktest.support.AuthSession;
 import com.strangequark.trascktest.support.BrowserFactory;
 import com.strangequark.trascktest.support.BrowserSession;
+import com.strangequark.trascktest.support.JsonSupport;
 import com.strangequark.trascktest.support.RuntimeChecks;
 import com.strangequark.trascktest.support.SampleDataFixture;
 import com.strangequark.trascktest.support.SetupBootstrap;
@@ -53,14 +54,16 @@ class PlanningBoardRealWorkflowTest {
             String swimlaneName = "Browser Planning Lane " + suffix;
             String releaseName = "Browser Planning Release " + suffix;
             String roadmapName = "Browser Planning Roadmap " + suffix;
+            String backlogStoryTitle = "Browser Planning Backlog Story " + suffix;
 
             Page page = browserSession.page();
             installFrontendContext(page, workspace, seed);
             loginThroughUi(page, login);
 
             page.navigate("/planning");
+            assertThat(page.locator("xpath=//h2[normalize-space()='Sprint Flow']").first()).isVisible();
+            page.navigate("/planning/admin");
             assertThat(page.locator("xpath=//h2[normalize-space()='Teams']").first()).isVisible();
-            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load").setExact(true)).click();
 
             panel(page, "Teams").getByLabel("Team name").fill(teamName);
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create team")).click();
@@ -91,6 +94,7 @@ class PlanningBoardRealWorkflowTest {
             Locator layout = panel(page, "Board Layout");
             layout.getByLabel("Board").selectOption(boardId);
             layout.getByLabel("Column name").fill(columnName);
+            layout.locator(".status-option input").first().check();
             page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Add column")).click();
             JsonNode column = waitForRecordByName(apiSession, "/api/v1/boards/" + boardId + "/columns", columnName);
             cleanup.delete(apiSession, "/api/v1/boards/" + boardId + "/columns/" + column.path("id").asText());
@@ -124,6 +128,31 @@ class PlanningBoardRealWorkflowTest {
             JsonNode roadmapItem = waitForRoadmapItem(apiSession, roadmapRecord.path("id").asText(), seed.workItem().path("id").asText());
             cleanup.delete(apiSession, "/api/v1/roadmaps/" + roadmapRecord.path("id").asText()
                     + "/items/" + roadmapItem.path("id").asText());
+
+            JsonNode backlogStory = createStory(apiSession, workspace.projectId(), backlogStoryTitle);
+            String backlogStoryId = backlogStory.path("id").asText();
+            cleanup.delete(apiSession, "/api/v1/work-items/" + backlogStoryId);
+            apiSession.requireJson(apiSession.post("/api/v1/work-items/" + backlogStoryId + "/team", JsonSupport.object(
+                    "teamId", teamId
+            )), 200);
+
+            page.navigate("/planning/backlog");
+            assertThat(page.locator("xpath=//h2[normalize-space()='Backlog']").first()).isVisible();
+            page.getByLabel("Iteration").selectOption(iteration.path("id").asText());
+            assertThat(page.getByText(backlogStoryTitle).first()).isVisible();
+            page.locator(".planning-work-row").filter(new Locator.FilterOptions().setHasText(backlogStoryTitle))
+                    .getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Plan"))
+                    .click();
+            waitForIterationScopedWorkItem(apiSession, iteration.path("id").asText(), backlogStoryId);
+            assertThat(page.locator(".planning-work-row").filter(new Locator.FilterOptions().setHasText(backlogStoryTitle))).hasCount(1);
+            page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Start sprint")).click();
+            waitForIterationStatus(apiSession, iteration.path("id").asText(), "active");
+
+            page.navigate("/planning/active-board");
+            assertThat(page.locator("xpath=//h2[normalize-space()='Active Sprint Board']").first()).isVisible();
+            page.getByLabel("Iteration").selectOption(iteration.path("id").asText());
+            page.getByLabel("Board").selectOption(boardId);
+            assertThat(page.getByText(backlogStoryTitle).first()).isVisible();
 
             page.navigate("/planning/boards/" + boardId);
             assertThat(page.getByRole(AriaRole.HEADING, new Page.GetByRoleOptions().setName("Board Detail"))).isVisible();
@@ -220,6 +249,51 @@ class PlanningBoardRealWorkflowTest {
             throw lastFailure;
         }
         throw new AssertionError("Could not find roadmap item for workItemId=" + workItemId);
+    }
+
+    private JsonNode createStory(AuthSession session, String projectId, String title) {
+        return session.requireJson(session.post("/api/v1/projects/" + projectId + "/work-items", JsonSupport.object(
+                "typeKey", "story",
+                "title", title,
+                "reporterId", session.userId(),
+                "descriptionMarkdown", "Created by planning backlog/board browser coverage.",
+                "visibility", "inherited"
+        )), 201);
+    }
+
+    private void waitForIterationScopedWorkItem(AuthSession session, String iterationId, String workItemId) {
+        long deadline = System.currentTimeMillis() + 5_000;
+        while (System.currentTimeMillis() < deadline) {
+            JsonNode rows = session.requireJson(session.get("/api/v1/iterations/" + iterationId + "/work-items"), 200);
+            for (JsonNode row : rows) {
+                if (workItemId.equals(row.path("workItemId").asText()) && row.path("removedAt").isNull()) {
+                    return;
+                }
+            }
+            sleep();
+        }
+        throw new AssertionError("Could not find iteration-scoped work item " + workItemId + " on iteration " + iterationId);
+    }
+
+    private void waitForIterationStatus(AuthSession session, String iterationId, String status) {
+        long deadline = System.currentTimeMillis() + 5_000;
+        while (System.currentTimeMillis() < deadline) {
+            JsonNode iteration = session.requireJson(session.get("/api/v1/iterations/" + iterationId), 200);
+            if (status.equals(iteration.path("status").asText())) {
+                return;
+            }
+            sleep();
+        }
+        throw new AssertionError("Iteration " + iterationId + " did not reach status " + status);
+    }
+
+    private void sleep() {
+        try {
+            Thread.sleep(150);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("Interrupted while waiting", interrupted);
+        }
     }
 
     private String jsString(String value) {

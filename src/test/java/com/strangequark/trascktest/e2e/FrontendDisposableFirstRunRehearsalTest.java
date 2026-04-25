@@ -70,8 +70,9 @@ class FrontendDisposableFirstRunRehearsalTest {
                 assertThat(page.getByText(seed.workItem().path("title").asText()).first()).isVisible();
 
                 page.navigate("/planning");
+                assertThat(page.locator("xpath=//h2[normalize-space()='Sprint Flow']").first()).isVisible();
+                page.navigate("/planning/admin");
                 assertThat(page.locator("xpath=//h2[normalize-space()='Teams']").first()).isVisible();
-                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load").setExact(true)).click();
 
                 page.navigate("/configuration");
                 assertThat(page.locator("xpath=//h2[normalize-space()='Custom Field']").first()).isVisible();
@@ -115,8 +116,9 @@ class FrontendDisposableFirstRunRehearsalTest {
                 loginThroughUi(page, bootstrap.context());
 
                 page.navigate("/planning");
+                assertThat(page.locator("xpath=//h2[normalize-space()='Sprint Flow']").first()).isVisible();
+                page.navigate("/planning/admin");
                 assertThat(page.locator("xpath=//h2[normalize-space()='Teams']").first()).isVisible();
-                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Load").setExact(true)).click();
                 String teamName = "First Run Rehearsal Team " + suffix;
                 panel(page, "Teams").getByLabel("Team name").fill(teamName);
                 page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Create team")).click();
